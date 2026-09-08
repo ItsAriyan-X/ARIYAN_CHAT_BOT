@@ -22,7 +22,7 @@ module.exports = {
     // ========== OWNER INFO ==========
     const authorName = "♡┋𝐚𝐫𝐢𝐲𝐚𝐧ᥫ᭡";
     const ownAge = "20+";
-    const messenger = "https://m.me/Bhodro.habib";
+    const messenger = "https://www.facebook.com/ItsAriyanSabbir";
     const authorFB = "Sk Sabbir Boss";
     const authorNumber = "01705219039";
     const Status = "Single";
