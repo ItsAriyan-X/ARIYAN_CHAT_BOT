@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://i.imgur.com/8Km9tLL.jpg" alt="ARIYAN CHAT BOT Banner" width="100%"/>
+  <img src="https://i.imgur.com/8T48Ddf.png" alt="ARIYAN CHAT BOT Banner" width="100%"/>
 </p>
 
 <h1 align="center">🤖 ARIYAN CHAT BOT 🤖</h1>
