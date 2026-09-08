@@ -2,7 +2,7 @@ module.exports = {
  config: {
  name: "fork",
  version: "1.6",
- author: "〲MAMUNツ࿐",
+ author: "〲ARIYANツ࿐",
  countDown: 2,
  role: 0,
  shortDescription: "Official GitHub Fork",
