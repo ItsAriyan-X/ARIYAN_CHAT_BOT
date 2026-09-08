@@ -1,10 +1,10 @@
 <p align="center">
   <!-- Banner Section -->
-  <img src="https://i.imgur.com/Tn1O0s3.jpeg" width="100%" alt="Header Banner"/>
+  <img src="https://i.imgur.com/8T48Ddf.png" width="100%" alt="Header Banner"/>
 </p>
 
 <h1 align="center">
-  SK HABIBULLA CHAT BOT
+  ARIYAN CHAT BOt
 </h1>
 
 <p align="center">
@@ -21,7 +21,7 @@
 ---
 
 ### 📬 Contact & Details
-* **Name:** Sk Habibulla
-* **Email:** khk821599@gmail.com
-* **Location:** India
+* **Name:** ARIYAN SABBIR
+* **Email:** ariyanking0970@gmail.com
+* **Location:**BANGLADESH
 * 
