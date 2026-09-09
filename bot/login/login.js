@@ -735,7 +735,7 @@ async function startBot(_0x3cad9e) {
           log.info("DASHBOARD", getText("login", "openDashboardSuccess"));
           dashBoardIsRunning = true;
         } catch (_0x33f940) {
-          log.err("DASHBOARD", getText("login", "openDashboardError"), _0x33f940);
+          log.error("DASHBOARD", getText("login", "openDashboardError"), _0x33f940);
         }
       }
       logColor("#f5ab00", character);
