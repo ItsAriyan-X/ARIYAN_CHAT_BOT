@@ -1,23 +1,23 @@
 module.exports = {
   config: {
-    name: "habib",
+    name: "ariyan",
     version: "2.0.0",
-    author: "Habib X Hridoy",
+    author: "Ariyan X Sabbir",
     countDown: 5,
     role: 0,
     shortDescription: "Multi Mention Detector",
-    longDescription: "Habib + Aashik + Mentions",
+    longDescription: "Ariyan + Sabbir + Mentions",
     category: "fun",
-    guide: "Mention users or type habib to trigger detectors"
+    guide: "Mention users or type ariyan to trigger detectors"
   },
 
   onStart: async function ({ message }) {
     try {
       const info = await message.reply(
         "✅ **All Detectors Active!**\n\n" +
-        "• habib / habib vai / habib bhai / habib bro\n" +
-        "•  2 nd name \n" +
-        "• \n" +
+        "• ariyan / ariyan vai / ariyan bhai / ariyan bro\n" +
+        "• 2 nd name\n" +
+        "• Sabbir\n" +
         "• 61591654275272\n" +
         "• 100028959431665\n\n" +
         "Bot ready 🔥"
@@ -27,11 +27,11 @@ module.exports = {
         global.GoatBot.onReply.set(info.messageID, {
           commandName: this.config.name,
           author: message.senderID,
-          type: "habib"
+          type: "ariyan"
         });
       }
     } catch (err) {
-      console.error("[habib] onStart error:", err);
+      console.error("[ariyan] onStart error:", err);
     }
   },
 
@@ -44,18 +44,18 @@ module.exports = {
       const now = Date.now();
 
       // ---- Duplicate reply prevention ----
-      if (!global.habibProcessed) global.habibProcessed = new Set();
-      if (messageID && global.habibProcessed.has(messageID)) return;
+      if (!global.ariyanProcessed) global.ariyanProcessed = new Set();
+      if (messageID && global.ariyanProcessed.has(messageID)) return;
 
       // ---- Thread-based anti-spam (8s) ----
-      if (!global.habibThreadCooldown) global.habibThreadCooldown = new Map();
-      const lastTime = global.habibThreadCooldown.get(threadID) || 0;
+      if (!global.ariyanThreadCooldown) global.ariyanThreadCooldown = new Map();
+      const lastTime = global.ariyanThreadCooldown.get(threadID) || 0;
       if (now - lastTime < 8000) return;
 
       const text = event.body.toLowerCase().trim();
       const mentions = event.mentions || {};
 
-      // Helper: only UID (mention or raw UID in text) — no name aliases
+      // Helper: only UID (mention or raw UID in text)
       const isTargetHit = (uid) => {
         if (mentions[uid]) return true;
         if (event.body.includes(uid)) return true;
@@ -63,60 +63,78 @@ module.exports = {
       };
 
       const markHandled = () => {
-        global.habibThreadCooldown.set(threadID, now);
+        global.ariyanThreadCooldown.set(threadID, now);
+
         if (messageID) {
-          global.habibProcessed.add(messageID);
+          global.ariyanProcessed.add(messageID);
+
           // Keep the processed set small
-          if (global.habibProcessed.size > 500) {
-            const first = global.habibProcessed.values().next().value;
-            global.habibProcessed.delete(first);
+          if (global.ariyanProcessed.size > 500) {
+            const first = global.ariyanProcessed.values().next().value;
+            global.ariyanProcessed.delete(first);
           }
         }
       };
 
-      // ---- 1. KB Aashik Detector (UID only) ----
-      const aashikUID = "61591040218593";
-      if (isTargetHit(aashikUID)) {
+      // ---- 1. Sabbir Detector (UID only) ----
+      const sabbirUID = "100028959431665";
+
+      if (isTargetHit(sabbirUID)) {
         markHandled();
-        await message.reply("uni akon besto ache 🙂");
+        await message.reply("Sabbir vai akon besto ache 🙂");
         return;
       }
 
-      // ---- 2. Target UID 61592654789914 ----
-      const targetID1 = "61592654789914";
+      // ---- 2. Target UID 61591654275272 ----
+      const targetID1 = "100028959431665";
+
       if (isTargetHit(targetID1)) {
         markHandled();
         await message.reply("O akon gf er sate kota bolte besto 😌");
         return;
       }
 
-      // ---- 3. Target UID 100079043707149 ----
-      const targetID2 = "100079043707149";
+      // ---- 3. Target UID 100028959431665 ----
+      const targetID2 = "61591654275272";
+
       if (isTargetHit(targetID2)) {
         markHandled();
-        await message.reply("Habib akon besto ache ki bolben amk bolun 😌");
+        await message.reply(
+          "Ariyan akon besto ache ki bolben amk bolun 😌"
+        );
         return;
       }
 
-      // ---- 4. Habib Detector ----
-      const habibTriggers = ["habib", "হাবিব", "habib vai", "habib bhai", "habib bro"];
-      if (habibTriggers.some(trigger => text.includes(trigger))) {
+      // ---- 4. Ariyan Detector ----
+      const ariyanTriggers = [
+        "ariyan",
+        "আরিয়ান",
+        "আড়িয়ান",
+        "ariyan vai",
+        "ariyan bhai",
+        "ariyan bro"
+      ];
+
+      if (ariyanTriggers.some(trigger => text.includes(trigger))) {
         markHandled();
 
         const replies = [
-          "bos akon besto ache 😌",
-          "habib vai besto re bhai 😂",
+          "Ariyan bos akon besto ache 😌",
+          "Ariyan vai besto re bhai 😂",
           "bos ektu rest nite dao 😤",
-          "habib er phone busy 🔥",
+          "Ariyan er phone busy 🔥",
           "ar koto bar bolba vai? 😅"
         ];
 
-        const randomReply = replies[Math.floor(Math.random() * replies.length)];
+        const randomReply =
+          replies[Math.floor(Math.random() * replies.length)];
+
         await message.reply(randomReply);
         return;
       }
+
     } catch (err) {
-      console.error("[habib] onChat error:", err);
+      console.error("[ariyan] onChat error:", err);
     }
   },
 
@@ -127,7 +145,7 @@ module.exports = {
 
       await message.reply(`You replied: ${event.body}`);
     } catch (err) {
-      console.error("[habib] onReply error:", err);
+      console.error("[ariyan] onReply error:", err);
     }
   },
 
@@ -138,7 +156,7 @@ module.exports = {
 
       await message.reply(`You reacted with: ${event.reaction} 👍`);
     } catch (err) {
-      console.error("[habib] onReaction error:", err);
+      console.error("[ariyan] onReaction error:", err);
     }
   },
 
@@ -148,7 +166,7 @@ module.exports = {
         await message.reply("Welcome to the group! 🎉");
       }
     } catch (err) {
-      console.error("[habib] onEvent error:", err);
+      console.error("[ariyan] onEvent error:", err);
     }
   }
 };
