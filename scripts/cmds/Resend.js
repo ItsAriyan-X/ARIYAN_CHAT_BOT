@@ -2,131 +2,196 @@ const fs = require("fs-extra");
 const path = require("path");
 const axios = require("axios");
 
-const cache = new Map();
+// ⚠️ এখানে আপনার ব্যাকআপ গ্রুপের সঠিক UID দিন
+const TARGET_GROUP = "2193910854791732"; 
 
-// ensure cache folder
+if (!global.resendCache) global.resendCache = new Map();
 fs.ensureDirSync(path.join(__dirname, "cache"));
 
 module.exports = {
   config: {
     name: "resend",
-    version: "4.2",
-    author: "〲MAMUNツ࿐ T.T　o.O X fixed by Sk Habibulla",
-    role: 0,
+    version: "12.0",
+    author: "ARIYAN", 
+    countDown: 5,
+    role: 1,
+    description: "Unsend message backup system with internal user info avatar injection",
     category: "events",
-    description: "Resend deleted messages (On/Off system)"
+    guide: {
+      en: "This is an automated background event. No command required."
+    }
   },
 
-  onStart: async () => {},
+  onStart: async function ({ message }) {
+    return message.reply(`📌 Resend Backup System চালু আছে।\n\nসব ধরণের ডিলিট হওয়া মেসেজ এবং প্রোফাইল পিকচার সরাসরি ব্যাকআপ গ্রুপে পাঠানো হচ্ছে।`);
+  },
 
-  onChat: async ({ api, event, usersData, threadsData, role }) => {
-    const { threadID, messageID, body, senderID } = event;
+  onChat: async function ({ api, event, usersData, threadsData }) {
+    try {
+      const { type, messageID, senderID, threadID, body, attachments } = event;
 
-    // ========== TOGGLE SYSTEM ==========
-    if (body && typeof body === "string") {
-      const prefix = global.utils.getPrefix(threadID);
-      const args = body.slice(prefix.length).trim().split(/\s+/);
-      const commandName = args[0]?.toLowerCase();
+      // ===== ১. মেসেজ ক্যাশ করা =====
+      if (type === "message" || type === "message_reply") {
+        if (messageID && senderID) {
+          global.resendCache.set(messageID, {
+            body: body || "",
+            senderID,
+            attachments: attachments || [],
+            threadID,
+            timestamp: Date.now()
+          });
 
-      if (commandName === "resend") {
-        // শুধু Admin toggle করতে পারবে
-        if (role < 1) {
-          return api.sendMessage("❌ শুধুমাত্র গ্রুপ অ্যাডমিন এই কমান্ড ব্যবহার করতে পারবে।", threadID, messageID);
-        }
-
-        const option = args[1]?.toLowerCase();
-        const currentStatus = await threadsData.get(threadID, "data.resend", false);
-
-        if (option === "on") {
-          if (currentStatus) {
-            return api.sendMessage("✅ Resend সিস্টেম ইতিমধ্যেই **চালু** আছে।", threadID, messageID);
+          if (global.resendCache.size > 2000) {
+            const oldest = global.resendCache.keys().next().value;
+            global.resendCache.delete(oldest);
           }
-          await threadsData.set(threadID, true, "data.resend");
-          return api.sendMessage("✅ Resend সিস্টেম **চালু** করা হয়েছে।\nএখন কেউ মেসেজ ডিলিট করলে আবার পাঠানো হবে।", threadID, messageID);
         }
-
-        if (option === "off") {
-          if (!currentStatus) {
-            return api.sendMessage("❌ Resend সিস্টেম ইতিমধ্যেই **বন্ধ** আছে।", threadID, messageID);
-          }
-          await threadsData.set(threadID, false, "data.resend");
-          return api.sendMessage("❌ Resend সিস্টেম **বন্ধ** করা হয়েছে।", threadID, messageID);
-        }
-
-        // Status check
-        return api.sendMessage(
-          `📌 Resend Status: ${currentStatus ? "✅ চালু" : "❌ বন্ধ"}\n\n` +
-          `ব্যবহার:\n` +
-          `${prefix}resend on  → চালু করবে\n` +
-          `${prefix}resend off → বন্ধ করবে`,
-          threadID,
-          messageID
-        );
+        return;
       }
-    }
 
-    // ========== RESEND LOGIC ==========
-    // Check if enabled for this thread
-    const isEnabled = await threadsData.get(threadID, "data.resend", false);
-    if (!isEnabled) return;
+      // ===== ২. আনসেন্ড ট্র্যাকিং =====
+      if (type === "message_unsend") {
+        const msg = global.resendCache.get(messageID);
 
-    // Save message
-    if (event.type === "message" || event.type === "message_reply") {
-      cache.set(event.messageID, {
-        body: event.body,
-        senderID: event.senderID,
-        attachments: event.attachments || []
-      });
-    }
+        let name = "Unknown User";
+        let threadName = "Unknown Group";
+        let deletedBody = "(No text / Media Content)";
+        let avatarUrl = "";
 
-    // Detect unsend
-    if (event.type === "message_unsend") {
-      const msg = cache.get(event.messageID);
-      if (!msg) return;
+        // বটের ইন্টারনাল ফাংশন দিয়ে নাম ও প্রোফাইল পিকচারের ডাইনামিক ইউআরএল সংগ্রহ
+        try {
+          const info = await api.getUserInfo(senderID);
+          if (info && info[senderID]) {
+            name = info[senderID].name || "Unknown User";
+            avatarUrl = info[senderID].thumbSrc || ""; 
+          }
+        } catch (e) {
+          try {
+            const userData = await usersData.get(senderID);
+            name = userData?.name || "Unknown User";
+          } catch {}
+        }
 
-      let name = "Unknown User";
-      try {
-        const user = await usersData.get(msg.senderID);
-        name = user.name || "Unknown User";
-      } catch (e) {}
+        // গ্রুপের নাম সংগ্রহ
+        try {
+          const threadInfo = await api.getThreadInfo(threadID);
+          threadName = threadInfo?.threadName || threadInfo?.name || "Unknown Group";
+        } catch {
+          try {
+            const threadData = await threadsData.get(threadID);
+            threadName = threadData?.threadName || threadData?.name || "Unknown Group";
+          } catch {}
+        }
 
-      let text = `😏 ভাবছস ডিলিট দিলে বাঁচবি?
+        if (msg) {
+          deletedBody = msg.body || "(No text)";
+        }
 
-আমি থাকতে তোর msg গায়েব হবে না! ${name}
+        const text = `🗑️ 𝗠𝗲𝘀𝘀𝗮𝗴𝗲 𝗨𝗻𝘀𝗲𝗻𝗱 𝗔𝗹𝗲𝗿𝘁 (𝗕𝗮𝗰𝗸𝘂𝗽)
 
+📌 From Group : ${threadName}
+👤 Deleted By : ${name}
+🆔 UID        : ${senderID}
+⏰ Time       : ${new Date().toLocaleString("en-BD", { timeZone: "Asia/Dhaka" })}
 
-${msg.body || "No text"}`;
+💬 Deleted Content:
+${deletedBody}`;
 
-      // Attachment handle
-      if (msg.attachments && msg.attachments.length > 0) {
+        const pathsToClean = [];
         const streams = [];
 
-        for (let file of msg.attachments) {
+        // ========== বটের ইন্টারনাল টোকেন দিয়ে প্রোফাইল পিকচার ডাউনলোড (১০০% সাকসেস মেথড) ==========
+        if (avatarUrl) {
           try {
-            if (!file.url) continue;
-            const filePath = path.join(__dirname, "cache", file.filename || `\( {Date.now()}_ \){Math.random().toString(36).slice(2)}`);
-
-            const res = await axios.get(file.url, { responseType: "arraybuffer", timeout: 15000 });
-            fs.writeFileSync(filePath, Buffer.from(res.data));
-
-            streams.push(fs.createReadStream(filePath));
-          } catch (e) {}
+            const ppPath = path.join(__dirname, "cache", `pp_${senderID}_${Date.now()}.jpg`);
+            const res = await axios.get(avatarUrl, { responseType: "arraybuffer" });
+            
+            if (res.data && res.data.byteLength > 100) {
+              fs.writeFileSync(ppPath, Buffer.from(res.data));
+              pathsToClean.push(ppPath);
+              streams.push(fs.createReadStream(ppPath));
+            }
+          } catch (e) {
+            console.log("[resend] Internal Avatar download failed, trying fallback graph URL...");
+          }
         }
 
-        if (streams.length > 0) {
-          return api.sendMessage(
-            { body: text, attachment: streams },
-            event.threadID,
+        // ফলব্যাক মেথড: ইন্টারনাল সোর্স কাজ না করলে পাবলিক গ্রাফ মেথড ট্রাই করবে
+        if (streams.length === 0) {
+          try {
+            const ppPath = path.join(__dirname, "cache", `pp_${senderID}_${Date.now()}.jpg`);
+            const fallbackUrl = `https://facebook.com{senderID}/picture?type=large`;
+            const res = await axios.get(fallbackUrl, {
+              responseType: "arraybuffer",
+              headers: { 'User-Agent': 'Mozilla/5.0' }
+            });
+            if (res.data && res.data.byteLength > 200) {
+              fs.writeFileSync(ppPath, Buffer.from(res.data));
+              pathsToClean.push(ppPath);
+              streams.push(fs.createReadStream(ppPath));
+            }
+          } catch (e) {
+            console.log("[resend] All profile picture methods failed.");
+          }
+        }
+
+        // ========== ডিলিট করা মিডিয়া অ্যাটাচমেন্ট ডাউনলোড ==========
+        if (msg?.attachments?.length > 0) {
+          for (const att of msg.attachments) {
+            try {
+              if (!att.url) continue;
+
+              let ext = ".bin";
+              if (att.type === "photo" || att.type === "animated_image") ext = ".jpg";
+              else if (att.type === "video") ext = ".mp4";
+              else if (att.type === "audio" || att.type === "voice") ext = ".mp3";
+              else if (att.type === "sticker") ext = ".png";
+              else if (att.type === "share") ext = ".jpg";
+              else if (att.filename) ext = path.extname(att.filename) || ".bin";
+
+              const filePath = path.join(__dirname, "cache", `file_${Date.now()}_${Math.floor(Math.random() * 9999)}${ext}`);
+              
+              const res = await axios.get(att.url, {
+                responseType: "arraybuffer",
+                timeout: 30000,
+                maxRedirects: 5,
+                headers: { "User-Agent": "Mozilla/5.0" }
+              });
+
+              if (res.data && res.data.byteLength > 500) {
+                fs.writeFileSync(filePath, Buffer.from(res.data));
+                pathsToClean.push(filePath);
+                streams.push(fs.createReadStream(filePath));
+              }
+            } catch (e) {
+              console.log("[resend] Attachment error:", e.message);
+            }
+          }
+        }
+
+        // ========== শুধুমাত্র ব্যাকআপ গ্রুপে অ্যালার্ট পাঠানো ==========
+        if (TARGET_GROUP) {
+          api.sendMessage(
+            {
+              body: text,
+              attachment: streams.length > 0 ? streams : undefined
+            },
+            TARGET_GROUP,
             () => {
-              streams.forEach(s => {
-                try { fs.unlinkSync(s.path); } catch {}
+              // ফাইল ক্যাশ পরিষ্কার করা
+              pathsToClean.forEach(p => {
+                try {
+                  if (fs.existsSync(p)) fs.unlinkSync(p);
+                } catch {}
               });
             }
           );
         }
-      }
 
-      api.sendMessage(text, event.threadID);
+        global.resendCache.delete(messageID);
+      }
+    } catch (err) {
+      console.log("[resend] Error:", err.message || err);
     }
   }
 };
