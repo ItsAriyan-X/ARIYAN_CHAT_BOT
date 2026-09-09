@@ -735,7 +735,7 @@ async function startBot(_0x3cad9e) {
           log.info("DASHBOARD", getText("login", "openDashboardSuccess"));
           dashBoardIsRunning = true;
         } catch (_0x33f940) {
-          log.error("DASHBOARD", getText("login", "openDashboardError"), _0x33f940);
+          log.err("DASHBOARD", getText("login", "openDashboardError"), _0x33f940);
         }
       }
       logColor("#f5ab00", character);
@@ -746,7 +746,7 @@ async function startBot(_0x3cad9e) {
           const _0x4c8959 = await _0x84ef91.getName(_0x4db515);
           log.master("ADMINBOT", '[' + ++_0x472e79 + "] " + _0x4db515 + " | " + _0x4c8959);
         } catch (_0x1403ed) {
-          log.error("ADMINBOT", '[' + ++_0x472e79 + "] " + _0x4db515);
+          log.master("ADMINBOT", '[' + ++_0x472e79 + "] " + _0x4db515);
         }
       }
       log.master("NOTIFICATION", (_0x4d48d2 || '').trim());
