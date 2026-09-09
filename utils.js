@@ -12,8 +12,8 @@ const _ = require("lodash");
 const { google } = require("googleapis");
 const ora = require("ora");
 const log = require("./logger/log.js");
-//const { isHexColor, colors } = require("./func/colors.js");
-//const Prism = require("./func/prism.js");
+const { isHexColor, colors } = require("./func/colors.js");
+const Prism = require("./func/prism.js");
 
 const { config } = global.GoatBot;
 const { gmailAccount } = config.credentials;
