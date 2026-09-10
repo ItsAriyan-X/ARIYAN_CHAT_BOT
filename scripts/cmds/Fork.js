@@ -19,7 +19,7 @@ module.exports = {
   },
 
   onStart: async function ({ api, event, message }) {
-    const forkLink = "https://github.com";
+    const forkLink = "https://github.com/ItsAriyan-X/ARIYAN_CHAT_BOT/fork";
     
     const replyText = `🤖 𝗔𝗥𝗜𝗬𝗔𝗡 𝗖𝗛𝗔𝗧 𝗕𝗢𝗧 🤖\n\n` +
                       `✨ আমার এই বটটি আপনার নিজের ফেসবুক আইডিতে সেটআপ করতে চান?\n\n` +
