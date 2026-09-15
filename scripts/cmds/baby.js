@@ -6,12 +6,51 @@ const API_URL = "https://vireonix.ai/v1/chat/completions";
 // 🤖 ARIYAN AI
 // বাংলা + English + Banglish
 // Reply Chain + Conversation Memory
+// Author Protection + Double Reply Protection
 // ==========================================
 
+const ORIGINAL_AUTHOR = "ARIYAN AHMED SABBIR";
+
 const chatHistory = new Map();
+const processingMessages = new Set();
 
 const MAX_HISTORY = 12;
 const HISTORY_TIMEOUT = 30 * 60 * 1000;
+
+
+// ==========================================
+// 🔒 AUTHOR PROTECTION
+// ==========================================
+function authorProtection() {
+  try {
+    return module.exports?.config?.author === ORIGINAL_AUTHOR;
+  } catch {
+    return false;
+  }
+}
+
+
+// ==========================================
+// 🛡️ DOUBLE REPLY PROTECTION
+// ==========================================
+function isAlreadyProcessing(event) {
+  const messageID = event?.messageID;
+
+  if (!messageID) return false;
+
+  if (processingMessages.has(messageID)) {
+    return true;
+  }
+
+  processingMessages.add(messageID);
+
+  // Safety cleanup
+  setTimeout(() => {
+    processingMessages.delete(messageID);
+  }, 15000);
+
+  return false;
+}
 
 
 // ==========================================
@@ -83,7 +122,6 @@ async function sendBotReply(message, text) {
   } catch (error) {
     console.error("❌ Reply Error:", error.message);
 
-    // Fallback
     try {
       return await message.send(text);
     } catch {
@@ -95,6 +133,7 @@ async function sendBotReply(message, text) {
 
 // ==========================================
 // 😂 Random Replies
+// Custom Reply পরিবর্তন করা যাবে
 // ==========================================
 const randomReplies = [
   "𝐀𝐬𝐬𝐚𝐥𝐚𝐦𝐮 𝐰𝐚𝐥𝐚𝐢𝐤𝐮𝐦 ♥",
@@ -118,11 +157,20 @@ const randomReplies = [
 
 
 // ==========================================
+// 🎲 Random Reply
+// ==========================================
+function getRandomReply() {
+  return randomReplies[
+    Math.floor(Math.random() * randomReplies.length)
+  ];
+}
+
+
+// ==========================================
 // 🧠 AI Request
 // ==========================================
 async function askAI(text, history = []) {
   try {
-
     const messages = [
       {
         role: "system",
@@ -144,7 +192,6 @@ async function askAI(text, history = []) {
       }
     ];
 
-
     const response = await axios.post(
       API_URL,
       {
@@ -159,17 +206,14 @@ async function askAI(text, history = []) {
       }
     );
 
-
     const answer =
       response.data?.choices?.[0]?.message?.content;
-
 
     if (!answer) return null;
 
     return answer.trim();
 
   } catch (error) {
-
     console.error(
       "❌ ARIYAN AI ERROR:",
       error.response?.status,
@@ -189,7 +233,7 @@ module.exports = {
   config: {
     name: "baby",
 
-    version: "14.0",
+    version: "15.0",
 
     author: "ARIYAN AHMED SABBIR",
 
@@ -239,6 +283,17 @@ module.exports = {
     message
   }) {
 
+    // 🔒 Author Check
+    if (!authorProtection()) {
+      console.log(
+        "❌ ARIYAN AI BLOCKED: Author has been changed."
+      );
+      return;
+    }
+
+    // 🛡️ Double Reply Protection
+    if (isAlreadyProcessing(event)) return;
+
     const text =
       args.join(" ").trim();
 
@@ -251,21 +306,11 @@ module.exports = {
     // ========================================
     if (!text) {
 
-      const reply =
-        randomReplies[
-          Math.floor(
-            Math.random() *
-            randomReplies.length
-          )
-        ];
-
-
       const info =
         await sendBotReply(
           message,
-          reply
+          getRandomReply()
         );
-
 
       setReply(
         info,
@@ -336,7 +381,7 @@ module.exports = {
       );
 
 
-    // পরের chain
+    // Chain continue
     setReply(
       info,
       event,
@@ -354,6 +399,17 @@ module.exports = {
     Reply,
     message
   }) {
+
+    // 🔒 Author Check
+    if (!authorProtection()) {
+      console.log(
+        "❌ ARIYAN AI BLOCKED: Author has been changed."
+      );
+      return;
+    }
+
+    // 🛡️ Double Reply Protection
+    if (isAlreadyProcessing(event)) return;
 
     const text =
       event.body?.trim();
@@ -444,6 +500,14 @@ module.exports = {
     message
   }) {
 
+    // 🔒 Author Check
+    if (!authorProtection()) {
+      console.log(
+        "❌ ARIYAN AI BLOCKED: Author has been changed."
+      );
+      return;
+    }
+
     const body =
       event.body?.trim();
 
@@ -451,10 +515,17 @@ module.exports = {
     if (!body) return;
 
 
+    // 🛡️ Double Reply Protection
+    if (isAlreadyProcessing(event)) return;
+
+
     const lower =
       body.toLowerCase();
 
 
+    // ========================================
+    // 🎯 Trigger List
+    // ========================================
     const triggers = [
       "baby",
       "bby",
@@ -471,6 +542,9 @@ module.exports = {
     ];
 
 
+    // ========================================
+    // 🎯 Prefix List
+    // ========================================
     const prefixes = [
       "baby ",
       "bby ",
@@ -489,17 +563,12 @@ module.exports = {
 
     // ========================================
     // শুধু trigger
+    // যেমন:
+    // bot
+    // baby
+    // maria
     // ========================================
     if (triggers.includes(lower)) {
-
-      const reply =
-        randomReplies[
-          Math.floor(
-            Math.random() *
-            randomReplies.length
-          )
-        ];
-
 
       const historyKey =
         `${event.threadID}_${event.senderID}`;
@@ -508,7 +577,7 @@ module.exports = {
       const info =
         await sendBotReply(
           message,
-          reply
+          getRandomReply()
         );
 
 
@@ -524,6 +593,10 @@ module.exports = {
 
     // ========================================
     // Prefix Detect
+    // যেমন:
+    // bot hello
+    // baby কেমন আছো
+    // maria hi
     // ========================================
     let userMessage = null;
 
@@ -546,18 +619,9 @@ module.exports = {
 
 
     // ========================================
-    // শুধু baby / bot
+    // Prefix-এর পরে কিছু না থাকলে
     // ========================================
     if (!userMessage.length) {
-
-      const reply =
-        randomReplies[
-          Math.floor(
-            Math.random() *
-            randomReplies.length
-          )
-        ];
-
 
       const historyKey =
         `${event.threadID}_${event.senderID}`;
@@ -566,7 +630,7 @@ module.exports = {
       const info =
         await sendBotReply(
           message,
-          reply
+          getRandomReply()
         );
 
 
@@ -654,3 +718,29 @@ module.exports = {
     );
   }
 };
+
+
+// ==========================================
+// 🔒 FINAL AUTHOR VERIFICATION
+// ==========================================
+// কেউ config.author পরিবর্তন করলে command
+// কোনো handler চালাবে না।
+// ==========================================
+if (!authorProtection()) {
+
+  module.exports.onStart = async function () {
+    return;
+  };
+
+  module.exports.onReply = async function () {
+    return;
+  };
+
+  module.exports.onChat = async function () {
+    return;
+  };
+
+  console.log(
+    "❌ ARIYAN AI: Author verification failed!"
+  );
+}
