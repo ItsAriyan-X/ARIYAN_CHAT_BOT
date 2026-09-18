@@ -1,959 +1,2121 @@
-const { createCanvas, registerFont } = require("canvas");
 const os = require("os");
-const fs = require("fs");
+const { createCanvas } = require("canvas");
+const fs = require("fs-extra");
 const path = require("path");
-const { execSync } = require("child_process");
 
-const fontDir = path.join(__dirname, "fonts");
+let si = null;
 
-function ensureFont(filename, url) {
-  const fp = path.join(fontDir, filename);
-  if (!fs.existsSync(fp)) {
-    try {
-      fs.mkdirSync(fontDir, { recursive: true });
-      execSync(`curl -L -o "${fp}" "${url}"`, { stdio: "pipe" });
-    } catch {}
-  }
-  return fp;
+try {
+  si = require("systeminformation");
+} catch (e) {
+  si = null;
 }
 
-ensureFont("NotoColorEmoji.ttf", "https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf");
+// ==========================================
+// 🔐 PROTECTED AUTHOR
+// ==========================================
+const PROTECTED_AUTHOR = "ARIYAN AHMED SABBIR";
 
-registerFont(path.join(fontDir, "CourierPrime-Regular.ttf"), { family: "UI" });
-registerFont(path.join(fontDir, "CourierPrime-Bold.ttf"),    { family: "UI", weight: "bold" });
-try {
-  registerFont(path.join(fontDir, "NotoColorEmoji.ttf"), { family: "Emoji" });
-} catch {}
+// ==========================================
+// ⚙️ EDITABLE BOT INFORMATION
+// ==========================================
+const BOT_NAME = "𝗔𝗥𝗜𝗬𝗔𝗡 𝗖𝗛𝗔𝗧 𝗕𝗢𝗧";
+const OWNER_NAME = "𝗔𝗥𝗜𝗬𝗔𝗡 𝗦𝗔𝗕𝗕𝗜𝗥";
+const POWERED_BY = "ARIYAN SABBIR";
 
-const themeMap = {};
+// ==========================================
+// 🎨 COLORS
+// ==========================================
+const C = {
+  bg: "#02060d",
+  grid: "#0a1830",
+  panel: "#050f20",
+  panelAlt: "rgba(255,255,255,0.03)",
+  border: "#1c6fe0",
+  glow: "rgba(45,150,255,0.6)",
+  cyan: "#38ecff",
+  green: "#39ffb8",
+  blue: "#4a90ff",
+  purple: "#c07bff",
+  dim: "#82aee0",
+  white: "#f5faff"
+};
 
-const THEMES = {
-  dark: {
-    bg0: "#091525", bg1: "#0d1f3c", bg2: "#0c1a35", bg3: "#07101e",
-    winBody: "rgba(10,18,38,0.84)",
-    sidebar: "rgba(255,255,255,0.032)",
-    tbFrom: "rgba(255,255,255,0.11)", tbTo: "rgba(255,255,255,0.04)",
-    tbBorder: "rgba(255,255,255,0.10)",
-    tbText: "rgba(255,255,255,0.80)",
-    btnBg: "rgba(255,255,255,0.06)",
-    btnText: "rgba(255,255,255,0.78)",
-    sidebarBorder: "rgba(255,255,255,0.055)",
-    activeItem: "rgba(0,120,212,0.22)",
-    activeText: "rgba(255,255,255,0.88)",
-    inactiveText: "rgba(255,255,255,0.34)",
-    taskFrom: "rgba(18,28,52,0.97)", taskTo: "rgba(12,20,40,0.99)",
-    taskBorder: "rgba(255,255,255,0.07)",
-    taskText: "rgba(255,255,255,0.80)",
-    taskSub: "rgba(255,255,255,0.42)",
-    taskIcons: "rgba(255,255,255,0.55)",
-    pageTitle: "#ffffff",
-    dateText: "rgba(255,255,255,0.28)",
-    cardBg: "rgba(255,255,255,0.052)",
-    cardBorder: "rgba(255,255,255,0.09)",
-    cardShine: "rgba(255,255,255,0.07)",
-    cardShadow: "rgba(0,0,0,0.55)",
-    labelText: "rgba(255,255,255,0.40)",
-    labelText2: "rgba(255,255,255,0.38)",
-    labelText3: "rgba(255,255,255,0.46)",
-    labelText4: "rgba(255,255,255,0.68)",
-    valueText: "rgba(255,255,255,0.80)",
-    barLabel: "rgba(255,255,255,0.78)",
-    barPct: "rgba(255,255,255,0.50)",
-    barTrack: "rgba(255,255,255,0.10)",
-    ringTrack: "rgba(255,255,255,0.07)",
-    ringValue: "#ffffff",
-    rowAlt: "rgba(255,255,255,0.022)",
-    detailValue: "rgba(255,255,255,0.80)",
-    subtitleText: "rgba(255,255,255,0.28)",
-    networkIP: "rgba(255,255,255,0.55)",
-    networkMask: "rgba(255,255,255,0.35)",
-    cmdText: "rgba(255,255,255,0.55)",
-    themeToggleBg: "rgba(255,255,255,0.06)",
-    themeToggleBorder: "rgba(255,255,255,0.18)",
-    themeActiveBg: "#0078d4",
-    themeActiveText: "#ffffff",
-    themeInactiveText: "rgba(255,255,255,0.45)",
+// ==========================================
+// 📊 COMMAND STATS
+// ==========================================
+const statsPath = path.join(
+  __dirname,
+  "cache",
+  "command_stats.json"
+);
+
+function readCommandStats() {
+  try {
+    return fs.readJsonSync(statsPath);
+  } catch (e) {
+    return {};
+  }
+}
+
+function writeCommandStats(data) {
+  try {
+    fs.ensureDirSync(path.dirname(statsPath));
+    fs.writeJsonSync(statsPath, data);
+  } catch (e) {}
+}
+
+// ==========================================
+// 🚀 MODULE
+// ==========================================
+module.exports = {
+
+  config: {
+    name: "up",
+    version: "5.0",
+    author: PROTECTED_AUTHOR,
+    countDown: 5,
+    role: 0,
+
+    description:
+      "Premium neon system overview HUD",
+
+    category: "system"
   },
-  light: {
-    bg0: "#f0f4f8", bg1: "#e8edf5", bg2: "#edf1f7", bg3: "#e4eaf2",
-    winBody: "rgba(255,255,255,0.92)",
-    sidebar: "rgba(240,244,248,0.85)",
-    tbFrom: "rgba(255,255,255,0.95)", tbTo: "rgba(240,244,248,0.90)",
-    tbBorder: "rgba(0,0,0,0.10)",
-    tbText: "rgba(20,20,20,0.82)",
-    btnBg: "rgba(0,0,0,0.05)",
-    btnText: "rgba(20,20,20,0.70)",
-    sidebarBorder: "rgba(0,0,0,0.07)",
-    activeItem: "rgba(0,120,212,0.12)",
-    activeText: "#0078d4",
-    inactiveText: "rgba(40,40,40,0.45)",
-    taskFrom: "rgba(255,255,255,0.98)", taskTo: "rgba(240,244,248,0.99)",
-    taskBorder: "rgba(0,0,0,0.08)",
-    taskText: "rgba(20,20,20,0.80)",
-    taskSub: "rgba(20,20,20,0.42)",
-    taskIcons: "rgba(40,40,40,0.40)",
-    pageTitle: "#1a1a2e",
-    dateText: "rgba(30,30,30,0.38)",
-    cardBg: "rgba(0,0,0,0.03)",
-    cardBorder: "rgba(0,0,0,0.08)",
-    cardShine: "rgba(255,255,255,0.60)",
-    cardShadow: "rgba(0,0,0,0.12)",
-    labelText: "rgba(30,30,30,0.45)",
-    labelText2: "rgba(30,30,30,0.42)",
-    labelText3: "rgba(30,30,30,0.55)",
-    labelText4: "rgba(30,30,30,0.65)",
-    valueText: "rgba(20,20,20,0.80)",
-    barLabel: "rgba(30,30,30,0.80)",
-    barPct: "rgba(30,30,30,0.45)",
-    barTrack: "rgba(0,0,0,0.08)",
-    ringTrack: "rgba(0,0,0,0.08)",
-    ringValue: "#1a1a2e",
-    rowAlt: "rgba(0,0,0,0.03)",
-    detailValue: "rgba(20,20,20,0.80)",
-    subtitleText: "rgba(30,30,30,0.38)",
-    networkIP: "rgba(30,30,30,0.60)",
-    networkMask: "rgba(30,30,30,0.40)",
-    cmdText: "rgba(30,30,30,0.60)",
-    themeToggleBg: "rgba(0,0,0,0.04)",
-    themeToggleBorder: "rgba(0,0,0,0.15)",
-    themeActiveBg: "#0078d4",
-    themeActiveText: "#ffffff",
-    themeInactiveText: "rgba(30,30,30,0.45)",
+
+  // ========================================
+  // 📊 TRACK COMMANDS
+  // ========================================
+  onChat: async function ({ event }) {
+
+    const body = (event.body || "").trim();
+
+    if (!body) return;
+
+    const match = body.match(
+      /^[^a-zA-Z0-9]*([a-zA-Z0-9_]+)/
+    );
+
+    if (!match) return;
+
+    const cmd =
+      match[1].toLowerCase();
+
+    const data =
+      readCommandStats();
+
+    data[cmd] =
+      (data[cmd] || 0) + 1;
+
+    writeCommandStats(data);
+  },
+
+  // ========================================
+  // ⚡ MAIN COMMAND
+  // ========================================
+  onStart: async function ({
+    api,
+    event,
+    usersData,
+    threadsData
+  }) {
+
+    // ======================================
+    // 🔐 AUTHOR SECURITY
+    // ======================================
+    if (
+      this.config.author !==
+      PROTECTED_AUTHOR
+    ) {
+
+      return api.sendMessage(
+        "⚠️ Unauthorized author change detected.\n\n" +
+        "❌ Command execution stopped.\n" +
+        "🔒 Author protection is active.",
+        event.threadID,
+        event.messageID
+      );
+    }
+
+    const {
+      threadID,
+      messageID,
+      timestamp
+    } = event;
+
+    try {
+
+      // ====================================
+      // 👥 DATABASE STATS
+      // ====================================
+      let users = [];
+      let groups = [];
+
+      try {
+        if (usersData) {
+          users =
+            await usersData.getAll();
+        }
+      } catch (e) {}
+
+      try {
+        if (threadsData) {
+          groups =
+            await threadsData.getAll();
+        }
+      } catch (e) {}
+
+      // ====================================
+      // 🖼️ GENERATE HUD
+      // ====================================
+      const buffer =
+        await generateHUD({
+          timestamp,
+          usersCount: users.length,
+          groupsCount: groups.length
+        });
+
+      // ====================================
+      // 📁 CACHE
+      // ====================================
+      const cacheDir =
+        path.join(
+          __dirname,
+          "cache"
+        );
+
+      fs.ensureDirSync(
+        cacheDir
+      );
+
+      const cachePath =
+        path.join(
+          cacheDir,
+          "up_hud.png"
+        );
+
+      fs.writeFileSync(
+        cachePath,
+        buffer
+      );
+
+      // ====================================
+      // ⏱️ UPTIME
+      // ====================================
+      const uptime =
+        process.uptime();
+
+      const days =
+        Math.floor(
+          uptime / 86400
+        );
+
+      const hours =
+        Math.floor(
+          (uptime % 86400) / 3600
+        );
+
+      const minutes =
+        Math.floor(
+          (uptime % 3600) / 60
+        );
+
+      const secs =
+        Math.floor(
+          uptime % 60
+        );
+
+      const uptimeStr =
+        `${days}d ${hours}h ${minutes}m ${secs}s`;
+
+      // ====================================
+      // 🏓 PING
+      // ====================================
+      const ping =
+        Date.now() - timestamp;
+
+      // ====================================
+      // 💾 MEMORY
+      // ====================================
+      const totalMem =
+        os.totalmem();
+
+      const freeMem =
+        os.freemem();
+
+      const usedMem =
+        totalMem - freeMem;
+
+      const usedMemStr =
+        (
+          usedMem /
+          1024 /
+          1024 /
+          1024
+        ).toFixed(2) + " GB";
+
+      const totalMemStr =
+        (
+          totalMem /
+          1024 /
+          1024 /
+          1024
+        ).toFixed(2) + " GB";
+
+      // ====================================
+      // 🇧🇩 BANGLADESH TIME
+      // ====================================
+      const bdTime =
+        new Date().toLocaleString(
+          "en-US",
+          {
+            timeZone:
+              "Asia/Dhaka",
+
+            weekday: "short",
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+
+            hour12: true
+          }
+        );
+
+      // ====================================
+      // 📦 NODE / OS
+      // ====================================
+      const nodeVer =
+        process.version;
+
+      const platform =
+        `${os.platform()} (${os.arch()})`;
+
+      // ====================================
+      // 📊 COMMAND COUNT
+      // ====================================
+      const rawStats =
+        readCommandStats();
+
+      const commandsTracked =
+        Object.keys(
+          rawStats
+        ).length;
+
+      // ====================================
+      // 📝 MESSAGE
+      // ====================================
+      const bodyMsg =
+
+`╭━━━━━━━━━━━━━━━━━━━━━━╮
+      𝗦𝗬𝗦𝗧𝗘𝗠 𝗢𝗩𝗘𝗥𝗩𝗜𝗘𝗪
+╰━━━━━━━━━━━━━━━━━━━━━━╯
+
+🤖 𝗕𝗢𝗧 𝗜𝗡𝗙𝗢
+╭──────────────────────
+│ 🏷️ Bot: ${BOT_NAME}
+│ 👑 Owner: ${OWNER_NAME}
+│ 🟢 Status: ONLINE
+│ 🔒 Security: SECURE
+╰──────────────────────
+
+⚡ 𝗦𝗬𝗦𝗧𝗘𝗠
+╭──────────────────────
+│ ⏱️ Uptime: ${uptimeStr}
+│ 🏓 Ping: ${ping} ms
+│ 📦 Node: ${nodeVer}
+│ 🖥️ Platform: ${platform}
+│ 💾 Memory: ${usedMemStr} / ${totalMemStr}
+╰──────────────────────
+
+📊 𝗕𝗢𝗧 𝗦𝗧𝗔𝗧𝗜𝗦𝗧𝗜𝗖𝗦
+╭──────────────────────
+│ 👥 Users: ${users.length}
+│ 🏘️ Groups: ${groups.length}
+│ ⚙️ Commands: ${commandsTracked}
+╰──────────────────────
+
+🇧🇩 ${bdTime}
+
+✧━━━━━━━━━━━━━━━━━━━━✧
+⚡ Powered by 𝗔𝗥𝗜𝗬𝗔𝗡 𝗦𝗔𝗕𝗕𝗜𝗥
+✧━━━━━━━━━━━━━━━━━━━━✧`;
+
+      // ====================================
+      // 📤 SEND
+      // ====================================
+      return api.sendMessage(
+        {
+          body: bodyMsg,
+
+          attachment:
+            fs.createReadStream(
+              cachePath
+            )
+        },
+
+        threadID,
+
+        () => {
+
+          try {
+
+            if (
+              fs.existsSync(
+                cachePath
+              )
+            ) {
+              fs.unlinkSync(
+                cachePath
+              );
+            }
+
+          } catch (e) {}
+        },
+
+        messageID
+      );
+
+    } catch (e) {
+
+      console.error(
+        "UP COMMAND ERROR:",
+        e
+      );
+
+      return api.sendMessage(
+        "❌ System HUD Error\n\n" +
+        `Error: ${e.message}`,
+        threadID
+      );
+    }
   }
 };
 
-let prev = null;
-const getCPU = () => {
-  let idle = 0, total = 0;
-  for (const c of os.cpus()) {
-    for (const t in c.times) total += c.times[t];
-    idle += c.times.idle;
-  }
-  const cur = { idle, total };
-  if (!prev) { prev = cur; return 0; }
-  const di = cur.idle - prev.idle, dt = cur.total - prev.total;
-  prev = cur;
-  return dt ? Math.round(100 - (100 * di / dt)) : 0;
-};
-const getDisk = () => {
-  try {
-    const d = execSync("df -k /").toString().split("\n")[1].split(/\s+/);
-    return Math.round((parseInt(d[2]) / parseInt(d[1])) * 100);
-  } catch { return Math.floor(Math.random() * 30) + 40; }
-};
-const getDiskTotal = () => {
-  try {
-    const d = execSync("df -k /").toString().split("\n")[1].split(/\s+/);
-    return (parseInt(d[1]) / 1024 / 1024).toFixed(1);
-  } catch { return "N/A"; }
-};
-const getDiskUsed = () => {
-  try {
-    const d = execSync("df -k /").toString().split("\n")[1].split(/\s+/);
-    return (parseInt(d[2]) / 1024 / 1024).toFixed(1);
-  } catch { return "N/A"; }
-};
-const getNetwork = () => {
-  try {
-    const ifaces = os.networkInterfaces();
-    let t = 0;
-    for (const i in ifaces) ifaces[i].forEach(a => { if (!a.internal && a.family === "IPv4") t++; });
-    return t;
-  } catch { return 1; }
-};
-const getNetworkIPs = () => {
-  try {
-    const ifaces = os.networkInterfaces();
-    const result = [];
-    for (const name in ifaces) {
-      ifaces[name].forEach(a => {
-        if (!a.internal && a.family === "IPv4") result.push({ name, address: a.address, netmask: a.netmask });
-      });
-    }
-    return result;
-  } catch { return []; }
-};
-const getTemperature = () => {
-  try {
-    if (os.platform() === "linux") {
-      return Math.round(parseInt(execSync("cat /sys/class/thermal/thermal_zone0/temp").toString()) / 1000);
-    } else if (os.platform() === "darwin") {
-      const t = execSync("sudo powermetrics --samplers smc -i1 -n1 | grep -i 'CPU die temperature'").toString();
-      const m = t.match(/(\d+.?\d*)/);
-      return m ? Math.round(parseFloat(m[0])) : 45;
-    }
-  } catch { return Math.floor(Math.random() * 20) + 40; }
-  return 45;
-};
-const getDhakaTime = () => {
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Dhaka" });
-  const dateStr = now.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "Asia/Dhaka" });
-  const fullStr = now.toLocaleString("en-US", {
-    weekday: "short", day: "numeric", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Dhaka"
-  }) + " BDT";
-  return { timeStr, dateStr, fullStr };
-};
+// ==========================================
+// 🖼️ GENERATE PREMIUM HUD
+// ==========================================
+async function generateHUD({
+  timestamp,
+  usersCount,
+  groupsCount
+}) {
 
-function roundRect(ctx, x, y, w, h, r) {
-  const tl = Array.isArray(r) ? r[0] : r;
-  const tr = Array.isArray(r) ? r[1] : r;
-  const br = Array.isArray(r) ? r[2] : r;
-  const bl = Array.isArray(r) ? r[3] : r;
+  // ========================================
+  // 💾 MEMORY
+  // ========================================
+  const totalMem =
+    os.totalmem();
+
+  const freeMem =
+    os.freemem();
+
+  const usedMem =
+    totalMem - freeMem;
+
+  const ramPct =
+    (usedMem / totalMem) * 100;
+
+  // ========================================
+  // 🖥️ CPU
+  // ========================================
+  const cpuCount =
+    os.cpus().length || 1;
+
+  const cpuPct =
+    Math.min(
+      100,
+      (
+        os.loadavg()[0] /
+        cpuCount
+      ) * 100
+    );
+
+  // ========================================
+  // 🏓 PING
+  // ========================================
+  const ping =
+    Date.now() - timestamp;
+
+  // ========================================
+  // 📈 CPU HISTORY
+  // ========================================
+  const cpuHistory = [];
+
+  for (
+    let i = 0;
+    i < 30;
+    i++
+  ) {
+
+    cpuHistory.push(
+      Math.max(
+        3,
+        cpuPct +
+        (
+          Math.random() *
+          16 -
+          8
+        )
+      )
+    );
+  }
+
+  // ========================================
+  // 💽 STORAGE
+  // ========================================
+  let storage = [];
+
+  // ========================================
+  // ☰ PROCESSES
+  // ========================================
+  let processes = [];
+
+  if (si) {
+
+    const [
+      fsSize,
+      procs
+    ] = await Promise.all([
+
+      si.fsSize()
+        .catch(
+          () => []
+        ),
+
+      si.processes()
+        .catch(
+          () => null
+        )
+    ]);
+
+    storage =
+      fsSize
+        .slice(0, 3)
+        .map(d => ({
+          name: d.mount,
+          used: d.used,
+          size: d.size,
+          pct: d.use
+        }));
+
+    if (
+      procs &&
+      procs.list
+    ) {
+
+      processes =
+        procs.list
+          .sort(
+            (a, b) =>
+              b.cpu -
+              a.cpu
+          )
+          .slice(0, 5)
+          .map(
+            p => ({
+              name:
+                p.name,
+
+              cpu:
+                p.cpu.toFixed(2) +
+                "%",
+
+              mem:
+                (
+                  p.memRss /
+                  1024
+                ).toFixed(1) +
+                " MB"
+            })
+          );
+    }
+  }
+
+  // ========================================
+  // ⭐ TOP COMMANDS
+  // ========================================
+  const rawStats =
+    readCommandStats();
+
+  const topCommands =
+    Object.entries(
+      rawStats
+    )
+      .sort(
+        (a, b) =>
+          b[1] -
+          a[1]
+      )
+      .slice(0, 5)
+      .map(
+        ([name, count]) => ({
+          name,
+          count
+        })
+      );
+
+  const maxCount =
+    topCommands.length
+      ? topCommands[0].count
+      : 1;
+
+  // ========================================
+  // 📦 DATA
+  // ========================================
+  const s = {
+
+    botUptime:
+      fmtUptime(
+        process.uptime()
+      ),
+
+    ping:
+      `${ping} ms`,
+
+    ramUsed:
+      fmtBytes(
+        usedMem
+      ),
+
+    ramTotal:
+      fmtBytes(
+        totalMem
+      ),
+
+    ramPct,
+
+    cpuPct,
+
+    cpuHistory,
+
+    platform:
+      `${os.platform()} (${os.arch()})`,
+
+    nodeVersion:
+      process.version,
+
+    hostname:
+      os.hostname(),
+
+    usersCount,
+
+    groupsCount,
+
+    storage,
+
+    processes,
+
+    topCommands,
+
+    maxCount
+  };
+
+  // ========================================
+  // 🖼️ CANVAS
+  // ========================================
+  const W = 3400;
+  const H = 2000;
+
+  const canvas =
+    createCanvas(
+      W,
+      H
+    );
+
+  const ctx =
+    canvas.getContext(
+      "2d"
+    );
+
+  // ========================================
+  // 🌌 BACKGROUND
+  // ========================================
+  const bgGrad =
+    ctx.createRadialGradient(
+      W / 2,
+      H / 2,
+      120,
+      W / 2,
+      H / 2,
+      W * 0.75
+    );
+
+  bgGrad.addColorStop(
+    0,
+    "#071228"
+  );
+
+  bgGrad.addColorStop(
+    0.55,
+    "#03080f"
+  );
+
+  bgGrad.addColorStop(
+    1,
+    "#000103"
+  );
+
+  ctx.fillStyle =
+    bgGrad;
+
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+  // ========================================
+  // GRID
+  // ========================================
+  ctx.strokeStyle =
+    C.grid;
+
+  ctx.lineWidth = 1;
+
+  for (
+    let gx = 0;
+    gx < W;
+    gx += 60
+  ) {
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      gx,
+      0
+    );
+
+    ctx.lineTo(
+      gx,
+      H
+    );
+
+    ctx.stroke();
+  }
+
+  for (
+    let gy = 0;
+    gy < H;
+    gy += 60
+  ) {
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      0,
+      gy
+    );
+
+    ctx.lineTo(
+      W,
+      gy
+    );
+
+    ctx.stroke();
+  }
+
+  // ========================================
+  // MAIN PANEL
+  // ========================================
+  drawPanel(
+    ctx,
+    30,
+    30,
+    W - 60,
+    H - 60,
+    34
+  );
+
+  // ========================================
+  // HEADER
+  // ========================================
+  ctx.fillStyle =
+    C.cyan;
+
+  ctx.font =
+    "bold 78px Sans";
+
+  ctx.textAlign =
+    "left";
+
+  spacedText(
+    ctx,
+    "● SYSTEM OVERVIEW",
+    110,
+    150,
+    2
+  );
+
+  ctx.font =
+    "600 34px Sans";
+
+  ctx.fillStyle =
+    C.dim;
+
+  spacedText(
+    ctx,
+    "REAL-TIME MONITORING",
+    1230,
+    140,
+    5
+  );
+
+  const now =
+    new Date();
+
+  // Bangladesh time
+  const bdNow =
+    new Date(
+      now.toLocaleString(
+        "en-US",
+        {
+          timeZone:
+            "Asia/Dhaka"
+        }
+      )
+    );
+
+  ctx.textAlign =
+    "right";
+
+  ctx.fillStyle =
+    C.white;
+
+  ctx.font =
+    "bold 48px Sans";
+
+  ctx.fillText(
+    bdNow.toLocaleTimeString(
+      "en-GB"
+    ),
+    W - 110,
+    140
+  );
+
+  ctx.font =
+    "32px Sans";
+
+  ctx.fillStyle =
+    C.dim;
+
+  ctx.fillText(
+    bdNow.toDateString(),
+    W - 110,
+    92
+  );
+
+  ctx.textAlign =
+    "left";
+
+  // ========================================
+  // BOT BADGE
+  // ========================================
+  drawPanel(
+    ctx,
+    110,
+    175,
+    1900,
+    90,
+    18
+  );
+
+  ctx.fillStyle =
+    C.green;
+
+  ctx.font =
+    "bold 30px monospace";
+
+  ctx.fillText(
+    `● ONLINE   |   ${BOT_NAME}   |   OWNER: ${OWNER_NAME}`,
+    145,
+    233
+  );
+
+  // ========================================
+  // LEFT PANEL
+  // ========================================
+  const leftX = 110;
+  const leftY = 300;
+  const leftW = 1900;
+  const leftH = 980;
+
+  drawPanel(
+    ctx,
+    leftX,
+    leftY,
+    leftW,
+    leftH
+  );
+
+  const rows = [
+
+    [
+      "BOT UPTIME",
+      s.botUptime
+    ],
+
+    [
+      "PING",
+      s.ping
+    ],
+
+    [
+      "RAM",
+      `${s.ramUsed} / ${s.ramTotal}`
+    ],
+
+    [
+      "CPU LOAD",
+      `${s.cpuPct.toFixed(2)}%`
+    ],
+
+    [
+      "PLATFORM",
+      s.platform
+    ],
+
+    [
+      "NODE.JS",
+      s.nodeVersion
+    ],
+
+    [
+      "HOSTNAME",
+      s.hostname
+    ]
+
+  ];
+
+  let ry =
+    leftY + 110;
+
+  const rowH =
+    130;
+
+  rows.forEach(
+    ([label, value], i) => {
+
+      if (
+        i % 2 === 0
+      ) {
+
+        ctx.fillStyle =
+          C.panelAlt;
+
+        ctx.fillRect(
+          leftX + 30,
+          ry - 65,
+          leftW - 60,
+          rowH - 16
+        );
+      }
+
+      // status dot
+      ctx.fillStyle =
+        C.green;
+
+      ctx.beginPath();
+
+      ctx.arc(
+        leftX + 68,
+        ry - 10,
+        9,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      // label
+      ctx.fillStyle =
+        C.green;
+
+      ctx.font =
+        "bold 40px monospace";
+
+      ctx.fillText(
+        label,
+        leftX + 100,
+        ry
+      );
+
+      // value
+      ctx.fillStyle =
+        C.white;
+
+      ctx.font =
+        "40px monospace";
+
+      ctx.fillText(
+        ":  " + value,
+        leftX + 580,
+        ry
+      );
+
+      // RAM bar
+      if (
+        label === "RAM"
+      ) {
+
+        drawProgressBar(
+          ctx,
+          leftX + 580,
+          ry + 30,
+          950,
+          30,
+          s.ramPct,
+          C.cyan
+        );
+
+        ctx.fillStyle =
+          C.white;
+
+        ctx.font =
+          "bold 34px monospace";
+
+        ctx.fillText(
+          s.ramPct.toFixed(0) +
+          "%",
+          leftX + 1560,
+          ry + 55
+        );
+      }
+
+      // CPU graph
+      if (
+        label === "CPU LOAD"
+      ) {
+
+        drawSparkline(
+          ctx,
+          leftX + 580,
+          ry - 45,
+          750,
+          65,
+          s.cpuHistory,
+          C.green
+        );
+      }
+
+      if (
+        i <
+        rows.length - 1
+      ) {
+
+        ctx.strokeStyle =
+          "#123057";
+
+        ctx.setLineDash([
+          7,
+          7
+        ]);
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+          leftX + 80,
+          ry + 42
+        );
+
+        ctx.lineTo(
+          leftX +
+          leftW -
+          80,
+          ry + 42
+        );
+
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+      }
+
+      ry += rowH;
+    }
+  );
+
+  // ========================================
+  // RIGHT PANELS
+  // ========================================
+  const rightX =
+    2060;
+
+  const rightW =
+    1230;
+
+  // CPU
+  drawPanel(
+    ctx,
+    rightX,
+    leftY,
+    rightW,
+    465
+  );
+
+  ctx.fillStyle =
+    C.cyan;
+
+  ctx.font =
+    "bold 36px Sans";
+
+  ctx.fillText(
+    "● CPU USAGE",
+    rightX + 45,
+    leftY + 60
+  );
+
+  drawGauge(
+    ctx,
+    rightX + 230,
+    leftY + 250,
+    145,
+    s.cpuPct,
+    C.blue,
+    50
+  );
+
+  drawSparkline(
+    ctx,
+    rightX + 420,
+    leftY + 90,
+    760,
+    270,
+    s.cpuHistory,
+    C.blue
+  );
+
+  // RAM
+  const ramY =
+    leftY + 500;
+
+  drawPanel(
+    ctx,
+    rightX,
+    ramY,
+    rightW,
+    465
+  );
+
+  ctx.fillStyle =
+    C.cyan;
+
+  ctx.font =
+    "bold 36px Sans";
+
+  ctx.fillText(
+    "● RAM USAGE",
+    rightX + 45,
+    ramY + 60
+  );
+
+  drawGauge(
+    ctx,
+    rightX + 230,
+    ramY + 250,
+    145,
+    s.ramPct,
+    C.green,
+    50
+  );
+
+  ctx.fillStyle =
+    C.green;
+
+  ctx.font =
+    "bold 34px monospace";
+
+  ctx.fillText(
+    `USED  ${s.ramUsed}`,
+    rightX + 470,
+    ramY + 195
+  );
+
+  ctx.fillStyle =
+    C.white;
+
+  ctx.font =
+    "34px monospace";
+
+  ctx.fillText(
+    `TOTAL ${s.ramTotal}`,
+    rightX + 470,
+    ramY + 245
+  );
+
+  drawProgressBar(
+    ctx,
+    rightX + 470,
+    ramY + 285,
+    700,
+    30,
+    s.ramPct,
+    C.green
+  );
+
+  // ========================================
+  // BOTTOM PANELS
+  // ========================================
+  const botY =
+    leftY +
+    leftH +
+    50;
+
+  const botH =
+    390;
+
+  const colW =
+    1026;
+
+  const gap =
+    50;
+
+  const col1 =
+    110;
+
+  const col2 =
+    col1 +
+    colW +
+    gap;
+
+  const col3 =
+    col2 +
+    colW +
+    gap;
+
+  // ========================================
+  // STORAGE
+  // ========================================
+  drawPanel(
+    ctx,
+    col1,
+    botY,
+    colW,
+    botH
+  );
+
+  ctx.fillStyle =
+    C.cyan;
+
+  ctx.font =
+    "bold 36px Sans";
+
+  ctx.fillText(
+    "☰  STORAGE",
+    col1 + 45,
+    botY + 65
+  );
+
+  let sy =
+    botY + 145;
+
+  const storageData =
+    s.storage.length
+      ? s.storage
+      : [
+          {
+            name: "/",
+            used: 0,
+            size: 1,
+            pct: 0
+          }
+        ];
+
+  storageData.forEach(
+    d => {
+
+      ctx.fillStyle =
+        C.white;
+
+      ctx.font =
+        "bold 30px monospace";
+
+      ctx.fillText(
+        d.name,
+        col1 + 45,
+        sy
+      );
+
+      drawProgressBar(
+        ctx,
+        col1 + 300,
+        sy - 26,
+        380,
+        22,
+        d.pct,
+        C.blue
+      );
+
+      ctx.fillStyle =
+        C.cyan;
+
+      ctx.font =
+        "bold 27px monospace";
+
+      ctx.fillText(
+        `${d.pct.toFixed(0)}%`,
+        col1 + 720,
+        sy
+      );
+
+      ctx.font =
+        "23px monospace";
+
+      ctx.fillStyle =
+        C.dim;
+
+      ctx.fillText(
+        `${fmtBytes(d.used)} / ${fmtBytes(d.size)}`,
+        col1 + 300,
+        sy + 32
+      );
+
+      sy += 105;
+    }
+  );
+
+  // ========================================
+  // TOP COMMANDS
+  // ========================================
+  drawPanel(
+    ctx,
+    col2,
+    botY,
+    colW,
+    botH
+  );
+
+  ctx.fillStyle =
+    C.cyan;
+
+  ctx.font =
+    "bold 36px Sans";
+
+  ctx.fillText(
+    "★  TOP COMMANDS",
+    col2 + 45,
+    botY + 65
+  );
+
+  let cy =
+    botY + 135;
+
+  const cmdData =
+    s.topCommands.length
+      ? s.topCommands
+      : [
+          {
+            name: "N/A",
+            count: 0
+          }
+        ];
+
+  const cmdColors = [
+    C.green,
+    C.cyan,
+    C.blue,
+    C.purple,
+    C.dim
+  ];
+
+  cmdData.forEach(
+    (c, i) => {
+
+      ctx.fillStyle =
+        cmdColors[
+          i %
+          cmdColors.length
+        ];
+
+      ctx.font =
+        "bold 30px monospace";
+
+      ctx.fillText(
+        `${i + 1}.`,
+        col2 + 45,
+        cy
+      );
+
+      ctx.fillStyle =
+        C.white;
+
+      ctx.font =
+        "bold 30px monospace";
+
+      ctx.fillText(
+        c.name,
+        col2 + 100,
+        cy
+      );
+
+      drawProgressBar(
+        ctx,
+        col2 + 45,
+        cy + 18,
+        colW - 200,
+        18,
+        (
+          c.count /
+          s.maxCount
+        ) * 100,
+        cmdColors[
+          i %
+          cmdColors.length
+        ]
+      );
+
+      ctx.fillStyle =
+        C.dim;
+
+      ctx.font =
+        "24px monospace";
+
+      ctx.textAlign =
+        "right";
+
+      ctx.fillText(
+        `${c.count}x`,
+        col2 +
+        colW -
+        45,
+        cy
+      );
+
+      ctx.textAlign =
+        "left";
+
+      cy += 65;
+    }
+  );
+
+  // ========================================
+  // TOP PROCESSES
+  // ========================================
+  drawPanel(
+    ctx,
+    col3,
+    botY,
+    colW,
+    botH
+  );
+
+  ctx.fillStyle =
+    C.cyan;
+
+  ctx.font =
+    "bold 36px Sans";
+
+  ctx.fillText(
+    "☰  TOP PROCESSES",
+    col3 + 45,
+    botY + 65
+  );
+
+  ctx.font =
+    "bold 24px monospace";
+
+  ctx.fillStyle =
+    C.dim;
+
+  ctx.fillText(
+    "CPU",
+    col3 + 680,
+    botY + 65
+  );
+
+  ctx.fillText(
+    "MEM",
+    col3 + 830,
+    botY + 65
+  );
+
+  const procData =
+    s.processes.length
+      ? s.processes
+      : [
+          {
+            name: "node",
+            cpu: "—",
+            mem: "—"
+          }
+        ];
+
+  let py =
+    botY + 135;
+
+  const dots = [
+    C.green,
+    C.green,
+    C.blue,
+    C.purple,
+    C.purple
+  ];
+
+  procData.forEach(
+    (p, i) => {
+
+      if (
+        i % 2 === 0
+      ) {
+
+        ctx.fillStyle =
+          C.panelAlt;
+
+        ctx.fillRect(
+          col3 + 30,
+          py - 38,
+          colW - 60,
+          58
+        );
+      }
+
+      ctx.fillStyle =
+        dots[
+          i % dots.length
+        ];
+
+      ctx.beginPath();
+
+      ctx.arc(
+        col3 + 68,
+        py - 10,
+        9,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+
+      ctx.fillStyle =
+        C.white;
+
+      ctx.font =
+        "bold 30px monospace";
+
+      ctx.fillText(
+        p.name,
+        col3 + 100,
+        py
+      );
+
+      ctx.font =
+        "27px monospace";
+
+      ctx.fillStyle =
+        C.cyan;
+
+      ctx.fillText(
+        p.cpu,
+        col3 + 670,
+        py
+      );
+
+      ctx.fillStyle =
+        C.white;
+
+      ctx.fillText(
+        p.mem,
+        col3 + 810,
+        py
+      );
+
+      py += 60;
+    }
+  );
+
+  // ========================================
+  // FOOTER
+  // ========================================
+  const footY =
+    H - 160;
+
+  const footW =
+    W - 220;
+
+  drawPanel(
+    ctx,
+    110,
+    footY,
+    footW,
+    110
+  );
+
+  // ONLINE
+  ctx.fillStyle =
+    C.green;
+
   ctx.beginPath();
-  ctx.moveTo(x + tl, y);
-  ctx.lineTo(x + w - tr, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + tr);
-  ctx.lineTo(x + w, y + h - br);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - br, y + h);
-  ctx.lineTo(x + bl, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - bl);
-  ctx.lineTo(x, y + tl);
-  ctx.quadraticCurveTo(x, y, x + tl, y);
+
+  ctx.arc(
+    170,
+    footY + 55,
+    11,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+  ctx.font =
+    "bold 30px monospace";
+
+  ctx.fillStyle =
+    C.dim;
+
+  ctx.fillText(
+    "STATUS:",
+    200,
+    footY + 66
+  );
+
+  ctx.fillStyle =
+    C.white;
+
+  ctx.fillText(
+    "ONLINE",
+    380,
+    footY + 66
+  );
+
+  // LOAD AVG
+  ctx.fillStyle =
+    C.dim;
+
+  ctx.fillText(
+    "LOAD AVG:",
+    680,
+    footY + 66
+  );
+
+  ctx.fillStyle =
+    C.white;
+
+  ctx.fillText(
+    os.loadavg()
+      .map(
+        n =>
+          n.toFixed(2)
+      )
+      .join(", "),
+    940,
+    footY + 66
+  );
+
+  // COMMANDS
+  ctx.fillStyle =
+    C.dim;
+
+  ctx.fillText(
+    "COMMANDS TRACKED:",
+    1450,
+    footY + 66
+  );
+
+  ctx.fillStyle =
+    C.white;
+
+  ctx.fillText(
+    String(
+      Object.keys(
+        rawStats
+      ).length
+    ),
+    1820,
+    footY + 66
+  );
+
+  // POWERED BY
+  ctx.fillStyle =
+    C.green;
+
+  ctx.font =
+    "bold 30px monospace";
+
+  ctx.textAlign =
+    "right";
+
+  ctx.fillText(
+    `⚡ POWERED BY ${POWERED_BY}`,
+    W - 160,
+    footY + 66
+  );
+
+  ctx.textAlign =
+    "left";
+
+  return canvas.toBuffer(
+    "image/png"
+  );
+}
+
+// ==========================================
+// 🟦 ROUNDED RECTANGLE
+// ==========================================
+function roundRect(
+  ctx,
+  x,
+  y,
+  w,
+  h,
+  r
+) {
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    x + r,
+    y
+  );
+
+  ctx.arcTo(
+    x + w,
+    y,
+    x + w,
+    y + h,
+    r
+  );
+
+  ctx.arcTo(
+    x + w,
+    y + h,
+    x,
+    y + h,
+    r
+  );
+
+  ctx.arcTo(
+    x,
+    y + h,
+    x,
+    y,
+    r
+  );
+
+  ctx.arcTo(
+    x,
+    y,
+    x + w,
+    y,
+    r
+  );
+
   ctx.closePath();
 }
 
-function acrylicCardT(ctx, x, y, w, h, r, th) {
+// ==========================================
+// 🟦 PANEL
+// ==========================================
+function drawPanel(
+  ctx,
+  x,
+  y,
+  w,
+  h,
+  r = 20
+) {
+
   ctx.save();
-  ctx.shadowColor   = th.cardShadow;
-  ctx.shadowBlur    = 18;
-  ctx.shadowOffsetY = 4;
-  roundRect(ctx, x, y, w, h, r);
-  ctx.fillStyle = th.cardBg;
+
+  ctx.shadowColor =
+    C.glow;
+
+  ctx.shadowBlur =
+    18;
+
+  roundRect(
+    ctx,
+    x,
+    y,
+    w,
+    h,
+    r
+  );
+
+  ctx.fillStyle =
+    C.panel;
+
   ctx.fill();
-  ctx.restore();
-  roundRect(ctx, x, y, w, h, r);
-  ctx.strokeStyle = th.cardBorder;
-  ctx.lineWidth   = 1;
+
+  ctx.lineWidth = 2;
+
+  ctx.strokeStyle =
+    C.border;
+
   ctx.stroke();
-  roundRect(ctx, x + 1, y + 1, w - 2, 2, 1);
-  ctx.fillStyle = th.cardShine;
-  ctx.fill();
+
+  ctx.restore();
 }
 
-function win11BarT(ctx, x, y, w, value, color1, color2, label, pct, th) {
-  const trackH = 10;
-  ctx.font      = "bold 24px 'UI'";
-  ctx.fillStyle = th.barLabel;
-  ctx.textAlign = "left";
-  ctx.fillText(label, x, y - 10);
-  ctx.fillStyle = th.barPct;
-  ctx.textAlign = "right";
-  ctx.fillText(`${pct}%`, x + w, y - 10);
-  roundRect(ctx, x, y, w, trackH, trackH / 2);
-  ctx.fillStyle = th.barTrack;
-  ctx.fill();
-  if (value > 0) {
-    const fw = Math.max((value / 100) * w, trackH);
-    const g  = ctx.createLinearGradient(x, 0, x + fw, 0);
-    g.addColorStop(0, color1);
-    g.addColorStop(1, color2);
-    roundRect(ctx, x, y, fw, trackH, trackH / 2);
-    ctx.fillStyle = g;
-    ctx.fill();
-    ctx.save();
-    ctx.shadowColor = color1;
-    ctx.shadowBlur  = 12;
-    roundRect(ctx, x + fw - 4, y, 4, trackH, trackH / 2);
-    ctx.fillStyle = color2;
-    ctx.fill();
-    ctx.restore();
-  }
-  ctx.textAlign = "left";
-}
+// ==========================================
+// ✨ SPACED TEXT
+// ==========================================
+function spacedText(
+  ctx,
+  text,
+  x,
+  y,
+  spacing = 2
+) {
 
-function clipText(ctx, text, maxW) {
-  let t = text;
-  while (ctx.measureText(t).width > maxW && t.length > 1) t = t.slice(0, -1);
-  if (t !== text) t = t.slice(0, -1) + "..";
-  return t;
-}
+  let cx = x;
 
-function drawBase(c, W, H, activePage, version, th) {
-  const bg = c.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0,    th.bg0);
-  bg.addColorStop(0.4,  th.bg1);
-  bg.addColorStop(0.75, th.bg2);
-  bg.addColorStop(1,    th.bg3);
-  c.fillStyle = bg;
-  c.fillRect(0, 0, W, H);
+  for (
+    const ch of text
+  ) {
 
-  const glow = (gx, gy, gr, col) => {
-    const rg = c.createRadialGradient(gx, gy, 0, gx, gy, gr);
-    rg.addColorStop(0, col);
-    rg.addColorStop(1, "rgba(0,0,0,0)");
-    c.fillStyle = rg;
-    c.fillRect(gx - gr, gy - gr, gr * 2, gr * 2);
-  };
-  glow(280, 200, 480, "rgba(0,120,212,0.17)");
-  glow(1520, 820, 440, "rgba(90,60,200,0.13)");
-  glow(900, 580, 560, "rgba(0,80,170,0.08)");
-
-  const WIN_X = 55, WIN_Y = 28, WIN_W = W - 110;
-  const TB_H  = 50;
-
-  roundRect(c, WIN_X, WIN_Y, WIN_W, TB_H, [12, 12, 0, 0]);
-  const tbG = c.createLinearGradient(WIN_X, WIN_Y, WIN_X, WIN_Y + TB_H);
-  tbG.addColorStop(0, th.tbFrom);
-  tbG.addColorStop(1, th.tbTo);
-  c.fillStyle = tbG;
-  c.fill();
-  c.strokeStyle = th.tbBorder;
-  c.lineWidth   = 1;
-  c.stroke();
-
-  c.beginPath();
-  c.arc(WIN_X + 22, WIN_Y + 25, 9, 0, Math.PI * 2);
-  c.fillStyle = "#0078d4";
-  c.fill();
-
-  c.font      = "bold 23px 'UI'";
-  c.fillStyle = th.tbText;
-  c.textAlign = "left";
-  c.fillText(`System Monitor  \u2014  v${version}`, WIN_X + 46, WIN_Y + 32);
-
-  [
-    { x: WIN_X + WIN_W - 138, label: "\u2014", bg: th.btnBg },
-    { x: WIN_X + WIN_W - 92,  label: "\u25A1",  bg: th.btnBg },
-    { x: WIN_X + WIN_W - 46,  label: "\u2715",  bg: "rgba(196,43,28,0.85)" },
-  ].forEach(btn => {
-    roundRect(c, btn.x - 8, WIN_Y + 1, 44, TB_H - 2, 0);
-    c.fillStyle = btn.bg;
-    c.fill();
-    c.font      = "19px 'UI'";
-    c.fillStyle = btn.label === "\u2715" ? "rgba(255,255,255,0.90)" : th.btnText;
-    c.textAlign = "center";
-    c.fillText(btn.label, btn.x + 14, WIN_Y + 30);
-  });
-
-  const BODY_Y = WIN_Y + TB_H;
-  const BODY_H = H - TB_H - WIN_Y - 30 - 72;
-  roundRect(c, WIN_X, BODY_Y, WIN_W, BODY_H, [0, 0, 12, 12]);
-  c.fillStyle = th.winBody;
-  c.fill();
-  c.strokeStyle = th.tbBorder;
-  c.lineWidth   = 1;
-  c.stroke();
-
-  const SB_W = 265;
-  roundRect(c, WIN_X + 1, BODY_Y + 1, SB_W, BODY_H - 2, [0, 0, 0, 12]);
-  c.fillStyle = th.sidebar;
-  c.fill();
-  c.strokeStyle = th.sidebarBorder;
-  c.lineWidth   = 1;
-  c.beginPath();
-  c.moveTo(WIN_X + SB_W, BODY_Y + 8);
-  c.lineTo(WIN_X + SB_W, BODY_Y + BODY_H - 8);
-  c.stroke();
-
-  const pages = ["Overview", "Performance", "Network", "Storage", "Settings"];
-  pages.forEach((label, i) => {
-    const ny     = BODY_Y + 28 + i * 66;
-    const active = label.toLowerCase() === activePage;
-    if (active) {
-      roundRect(c, WIN_X + 10, ny - 4, SB_W - 20, 54, 8);
-      c.fillStyle = th.activeItem;
-      c.fill();
-      c.fillStyle = "#0078d4";
-      c.fillRect(WIN_X + 10, ny + 4, 4, 34);
-    }
-    c.font      = "bold 21px 'UI'";
-    c.fillStyle = active ? th.activeText : th.inactiveText;
-    c.textAlign = "left";
-    c.fillText(label, WIN_X + 28, ny + 30);
-  });
-
-  const { timeStr, dateStr } = getDhakaTime();
-  const TASK_Y = H - 70;
-  const taskBg = c.createLinearGradient(0, TASK_Y, 0, H);
-  taskBg.addColorStop(0, th.taskFrom);
-  taskBg.addColorStop(1, th.taskTo);
-  c.fillStyle = taskBg;
-  c.fillRect(0, TASK_Y, W, 70);
-  c.strokeStyle = th.taskBorder;
-  c.lineWidth   = 1;
-  c.beginPath();
-  c.moveTo(0, TASK_Y);
-  c.lineTo(W, TASK_Y);
-  c.stroke();
-
-  roundRect(c, W / 2 - 230, TASK_Y + 9, 50, 50, 8);
-  c.fillStyle = "rgba(0,120,212,0.88)";
-  c.fill();
-  c.font      = "bold 26px 'UI'";
-  c.fillStyle = "#ffffff";
-  c.textAlign = "center";
-  c.fillText("\u229E", W / 2 - 205, TASK_Y + 43);
-
-  ["\u25A3", "\u25A6", "\u2740", "\u25CE", "\u2699"].forEach((icon, i) => {
-    const ix = W / 2 - 120 + i * 58;
-    c.font      = "26px 'UI'";
-    c.textAlign = "center";
-    c.fillStyle = i === 0 ? th.taskText : th.taskIcons;
-    c.fillText(icon, ix, TASK_Y + 43);
-    if (i === 0) {
-      c.beginPath();
-      c.arc(ix, TASK_Y + 62, 3, 0, Math.PI * 2);
-      c.fillStyle = "#0078d4";
-      c.fill();
-    }
-  });
-
-  c.font      = "bold 21px 'UI'";
-  c.fillStyle = th.taskText;
-  c.textAlign = "right";
-  c.fillText(timeStr, W - 28, TASK_Y + 32);
-  c.font      = "19px 'UI'";
-  c.fillStyle = th.taskSub;
-  c.fillText(dateStr, W - 28, TASK_Y + 56);
-
-  ["\u266B", "\u25D0", "\u2602"].forEach((ico, i) => {
-    c.font      = "22px 'UI'";
-    c.fillStyle = th.taskIcons;
-    c.textAlign = "center";
-    c.fillText(ico, W - 165 + i * 34, TASK_Y + 40);
-  });
-
-  return { WIN_X, WIN_Y, WIN_W, TB_H, BODY_Y, BODY_H, SB_W };
-}
-
-function drawPageHeader(c, MX, MY, WIN_X, WIN_W, title, subtitle, subtitleColor, th) {
-  c.font      = "bold 46px 'UI'";
-  c.fillStyle = th.pageTitle;
-  c.textAlign = "left";
-  c.fillText(title, MX, MY + 42);
-
-  if (subtitle) {
-    const pillW = c.measureText(subtitle).width + 44;
-    roundRect(c, MX + 232, MY + 12, pillW, 34, 17);
-    c.fillStyle = subtitleColor + "20";
-    c.fill();
-    roundRect(c, MX + 232, MY + 12, pillW, 34, 17);
-    c.strokeStyle = subtitleColor + "55";
-    c.lineWidth   = 1;
-    c.stroke();
-    c.beginPath();
-    c.arc(MX + 250, MY + 29, 6, 0, Math.PI * 2);
-    c.fillStyle = subtitleColor;
-    c.fill();
-    c.font      = "bold 19px 'UI'";
-    c.fillStyle = subtitleColor;
-    c.textAlign = "left";
-    c.fillText(subtitle, MX + 263, MY + 34);
-  }
-
-  c.font      = "21px 'UI'";
-  c.fillStyle = th.subtitleText;
-  c.textAlign = "right";
-  c.fillText(getDhakaTime().fullStr, WIN_X + WIN_W - 28, MY + 42);
-}
-
-async function renderPage(page, sysData, th) {
-  const W = 1800, H = 1160;
-  const cv = createCanvas(W, H);
-  const c  = cv.getContext("2d");
-
-  const { WIN_X, WIN_Y, WIN_W, TB_H, BODY_Y, BODY_H, SB_W } = drawBase(c, W, H, page, "3.0", th);
-
-  const MX  = WIN_X + SB_W + 28;
-  const MY  = BODY_Y + 22;
-  const MCW = WIN_W - SB_W - 46;
-  const gap = 18;
-
-  const { cpu, ram, disk, network, temp, threads, platform, arch, hostname,
-    load, cpuModel, ramGB, usedGB, uptime, ping, pingLabel, pingAccent,
-    sysStatus, sysStatusColor, diskTotal, diskUsed, netIPs, themeName } = sysData;
-
-  if (page === "overview") {
-    drawPageHeader(c, MX, MY, WIN_X, WIN_W, "Overview", sysStatus, sysStatusColor, th);
-
-    const R1Y = MY + 62, R1H = 120;
-    const C4W = (MCW - gap * 3) / 4;
-    [
-      { label: "Hostname",  value: hostname.substring(0, 16), accent: "#60a5fa", large: false },
-      { label: "OS / Arch", value: `${platform}  ${arch}`,   accent: "#a78bfa", large: false },
-      { label: "Processor", value: cpuModel,                  accent: "#f59e0b", large: false },
-      { label: "Uptime",    value: uptime,                    accent: "#34d399", large: true  },
-    ].forEach((card, i) => {
-      const cx = MX + i * (C4W + gap);
-      acrylicCardT(c, cx, R1Y, C4W, R1H, 12, th);
-      c.font      = "19px 'UI'";
-      c.fillStyle = th.labelText;
-      c.textAlign = "left";
-      c.fillText(card.label, cx + 16, R1Y + 28);
-      if (card.large) {
-        c.font      = "bold 44px 'UI'";
-        c.fillStyle = card.accent;
-        c.textAlign = "left";
-        c.fillText(card.value, cx + 16, R1Y + 88);
-      } else {
-        c.font = "bold 26px 'UI'";
-        const clipped = clipText(c, card.value, C4W - 28);
-        c.fillStyle = card.accent;
-        c.textAlign = "left";
-        c.fillText(clipped, cx + 16, R1Y + 78);
-      }
-    });
-
-    const R2Y = R1Y + R1H + 18;
-    const PERF_W = Math.floor((MCW * 0.60 - gap * 2) / 3);
-    const PERF_H = 235;
-    [
-      { label: "CPU",    value: cpu,  sub: `${threads} Cores \u00b7 Load ${load}`, c1: "#0078d4", c2: "#60a5fa" },
-      { label: "Memory", value: ram,  sub: `${usedGB} GB / ${ramGB} GB`,           c1: "#7c3aed", c2: "#a78bfa" },
-      { label: "Disk",   value: disk, sub: `Usage ${disk}% \u00b7 Active`,          c1: "#db2777", c2: "#f472b6" },
-    ].forEach((card, i) => {
-      const px = MX + i * (PERF_W + gap);
-      acrylicCardT(c, px, R2Y, PERF_W, PERF_H, 14, th);
-      const ringCX = px + PERF_W / 2, ringCY = R2Y + 102, ringR = 68;
-      c.beginPath(); c.arc(ringCX, ringCY, ringR, Math.PI * 0.75, Math.PI * 2.25);
-      c.strokeStyle = th.ringTrack; c.lineWidth = 11; c.lineCap = "round"; c.stroke();
-      const arcEnd = Math.PI * 0.75 + (card.value / 100) * Math.PI * 1.5;
-      const arcG = c.createLinearGradient(px, R2Y, px + PERF_W, R2Y + PERF_H);
-      arcG.addColorStop(0, card.c1); arcG.addColorStop(1, card.c2);
-      c.beginPath(); c.arc(ringCX, ringCY, ringR, Math.PI * 0.75, arcEnd);
-      c.strokeStyle = arcG; c.lineWidth = 11; c.lineCap = "round"; c.stroke();
-      c.save(); c.shadowColor = card.c1; c.shadowBlur = 16;
-      c.beginPath(); c.arc(ringCX, ringCY, ringR, arcEnd - 0.04, arcEnd);
-      c.strokeStyle = card.c2; c.lineWidth = 11; c.stroke(); c.restore();
-      c.font = "bold 44px 'UI'"; c.fillStyle = th.ringValue; c.textAlign = "center";
-      c.fillText(`${card.value}%`, ringCX, ringCY + 15);
-      c.font = "bold 26px 'UI'"; c.fillStyle = card.c2; c.fillText(card.label, ringCX, R2Y + 192);
-      c.font = "19px 'UI'"; c.fillStyle = th.labelText; c.fillText(card.sub, ringCX, R2Y + 218);
-    });
-
-    const DPX = MX + PERF_W * 3 + gap * 3;
-    const DPW = MCW - PERF_W * 3 - gap * 3;
-    acrylicCardT(c, DPX, R2Y, DPW, PERF_H, 14, th);
-    c.font = "bold 24px 'UI'"; c.fillStyle = th.labelText4; c.textAlign = "left";
-    c.fillText("System Details", DPX + 18, R2Y + 34);
-    [
-      { k: "Node.js",  v: process.version },
-      { k: "Threads",  v: `${threads}`    },
-      { k: "Temp",     v: `${temp}\u00b0C` },
-      { k: "Net IFs",  v: `${network}`    },
-      { k: "Load Avg", v: `${load}`       },
-    ].forEach((row, i) => {
-      const dy = R2Y + 64 + i * 34;
-      if (i % 2 === 0) {
-        roundRect(c, DPX + 10, dy - 16, DPW - 20, 30, 6);
-        c.fillStyle = th.rowAlt; c.fill();
-      }
-      c.font = "19px 'UI'"; c.fillStyle = th.labelText2; c.textAlign = "left";
-      c.fillText(row.k, DPX + 20, dy + 5);
-      c.font = "bold 19px 'UI'"; c.fillStyle = th.detailValue; c.textAlign = "right";
-      c.fillText(row.v, DPX + DPW - 18, dy + 5);
-    });
-
-    const R3Y = R2Y + PERF_H + 18, R3H = 160;
-    acrylicCardT(c, MX, R3Y, MCW, R3H, 14, th);
-    c.font = "bold 22px 'UI'"; c.fillStyle = th.labelText3; c.textAlign = "left";
-    c.fillText("Resource Usage", MX + 18, R3Y + 30);
-    const barW = (MCW - 90) / 3;
-    [
-      { label: "CPU Usage",    value: cpu,  c1: "#0078d4", c2: "#60a5fa" },
-      { label: "Memory Usage", value: ram,  c1: "#7c3aed", c2: "#a78bfa" },
-      { label: "Disk Usage",   value: disk, c1: "#db2777", c2: "#f472b6" },
-    ].forEach((bar, i) => {
-      win11BarT(c, MX + 18 + i * (barW + 27), R3Y + 86, barW, bar.value, bar.c1, bar.c2, bar.label, bar.value, th);
-    });
-
-    const R4Y = R3Y + R3H + 18, R4H = 110;
-    const T4W = (MCW - gap * 3) / 4;
-    [
-      { label: "Response", value: `${ping}ms`,       sub: pingLabel,                                          accent: pingAccent },
-      { label: "Hostname", value: hostname.substring(0, 14), sub: `${platform} \u00b7 ${arch}`,              accent: "#60a5fa"  },
-      { label: "CPU Temp", value: `${temp}\u00b0C`,  sub: temp > 70 ? "High" : temp > 50 ? "Warm" : "Cool",  accent: temp > 70 ? "#f87171" : temp > 50 ? "#fb923c" : "#34d399" },
-      { label: "Load Avg", value: `${load}`,         sub: `${threads} threads`,                               accent: "#a78bfa"  },
-    ].forEach((tile, i) => {
-      const tx = MX + i * (T4W + gap);
-      acrylicCardT(c, tx, R4Y, T4W, R4H, 14, th);
-      c.font = "19px 'UI'"; c.fillStyle = th.labelText; c.textAlign = "left";
-      c.fillText(tile.label, tx + 18, R4Y + 30);
-      c.font = "bold 32px 'UI'"; c.fillStyle = tile.accent;
-      c.fillText(tile.value, tx + 18, R4Y + 72);
-      c.font = "18px 'UI'"; c.fillStyle = th.labelText2;
-      c.fillText(tile.sub, tx + 18, R4Y + 96);
-    });
-
-  } else if (page === "performance") {
-    drawPageHeader(c, MX, MY, WIN_X, WIN_W, "Performance", "Real-time stats", "#60a5fa", th);
-
-    const cpuColor  = cpu > 80 ? "#f87171" : cpu > 50 ? "#fb923c" : "#60a5fa";
-    const ramColor  = ram > 80 ? "#f87171" : ram > 50 ? "#fb923c" : "#a78bfa";
-    const diskColor = disk > 80 ? "#f87171" : disk > 50 ? "#fb923c" : "#f472b6";
-    const tempColor = temp > 70 ? "#f87171" : temp > 50 ? "#fb923c" : "#34d399";
-
-    const bigRings = [
-      { label: "CPU Usage",    value: cpu,  sub: `${threads} cores \u00b7 ${load} avg`, c1: "#0078d4", c2: cpuColor  },
-      { label: "Memory",       value: ram,  sub: `${usedGB} / ${ramGB} GB`,              c1: "#7c3aed", c2: ramColor  },
-      { label: "Disk",         value: disk, sub: `${diskUsed} / ${diskTotal} GB`,        c1: "#db2777", c2: diskColor },
-      { label: "Temperature",  value: Math.min(temp, 99), sub: `${temp}\u00b0C \u00b7 ${temp > 70 ? "Hot" : temp > 50 ? "Warm" : "Cool"}`, c1: "#b45309", c2: tempColor },
-    ];
-
-    const RW = (MCW - gap * 3) / 4;
-    const RH = 320;
-    const RY = MY + 62;
-    bigRings.forEach((card, i) => {
-      const px = MX + i * (RW + gap);
-      acrylicCardT(c, px, RY, RW, RH, 14, th);
-      const ringCX = px + RW / 2, ringCY = RY + 130, ringR = 90;
-      c.beginPath(); c.arc(ringCX, ringCY, ringR, Math.PI * 0.75, Math.PI * 2.25);
-      c.strokeStyle = th.ringTrack; c.lineWidth = 14; c.lineCap = "round"; c.stroke();
-      const arcEnd = Math.PI * 0.75 + (card.value / 100) * Math.PI * 1.5;
-      const arcG = c.createLinearGradient(px, RY, px + RW, RY + RH);
-      arcG.addColorStop(0, card.c1); arcG.addColorStop(1, card.c2);
-      c.beginPath(); c.arc(ringCX, ringCY, ringR, Math.PI * 0.75, arcEnd);
-      c.strokeStyle = arcG; c.lineWidth = 14; c.lineCap = "round"; c.stroke();
-      c.save(); c.shadowColor = card.c1; c.shadowBlur = 20;
-      c.beginPath(); c.arc(ringCX, ringCY, ringR, arcEnd - 0.04, arcEnd);
-      c.strokeStyle = card.c2; c.lineWidth = 14; c.stroke(); c.restore();
-      c.font = "bold 56px 'UI'"; c.fillStyle = th.ringValue; c.textAlign = "center";
-      c.fillText(`${card.value}%`, ringCX, ringCY + 20);
-      c.font = "bold 28px 'UI'"; c.fillStyle = card.c2; c.fillText(card.label, ringCX, RY + 262);
-      c.font = "20px 'UI'"; c.fillStyle = th.labelText; c.fillText(card.sub, ringCX, RY + 294);
-    });
-
-    const R2Y = RY + RH + 22, R2H = 200;
-    acrylicCardT(c, MX, R2Y, MCW, R2H, 14, th);
-    c.font = "bold 24px 'UI'"; c.fillStyle = th.labelText4; c.textAlign = "left";
-    c.fillText("Detailed Breakdown", MX + 20, R2Y + 36);
-    const bW = (MCW - 80) / 3;
-    [
-      { label: "CPU Usage",    value: cpu,  c1: "#0078d4", c2: cpuColor  },
-      { label: "Memory Usage", value: ram,  c1: "#7c3aed", c2: ramColor  },
-      { label: "Disk Usage",   value: disk, c1: "#db2777", c2: diskColor },
-    ].forEach((bar, i) => {
-      win11BarT(c, MX + 18 + i * (bW + 22), R2Y + 100, bW, bar.value, bar.c1, bar.c2, bar.label, bar.value, th);
-    });
-
-    const R3Y = R2Y + R2H + 18, R3H = 130;
-    acrylicCardT(c, MX, R3Y, MCW, R3H, 14, th);
-    c.font = "bold 24px 'UI'"; c.fillStyle = th.labelText4; c.textAlign = "left";
-    c.fillText("Process Info", MX + 20, R3Y + 36);
-    const procInfo = [
-      { k: "CPU Model",     v: clipText(c, cpuModel, 600)  },
-      { k: "Node.js",       v: process.version             },
-      { k: "Platform",      v: `${platform} ${arch}`       },
-      { k: "Load Average",  v: `${os.loadavg().map(l => l.toFixed(2)).join("  ")}` },
-    ];
-    procInfo.forEach((row, i) => {
-      const dx = MX + 20 + i * ((MCW - 40) / 4);
-      acrylicCardT(c, dx, R3Y + 50, (MCW - 40) / 4 - 10, 64, 8, th);
-      c.font = "18px 'UI'"; c.fillStyle = th.labelText2; c.textAlign = "left";
-      c.fillText(row.k, dx + 12, R3Y + 72);
-      c.font = "bold 20px 'UI'"; c.fillStyle = th.detailValue;
-      c.fillText(row.v, dx + 12, R3Y + 100);
-    });
-
-  } else if (page === "network") {
-    drawPageHeader(c, MX, MY, WIN_X, WIN_W, "Network", `${network} Interface${network !== 1 ? "s" : ""} Active`, "#4ade80", th);
-
-    const R1Y = MY + 62, R1H = 130;
-    const C3W = (MCW - gap * 2) / 3;
-    [
-      { label: "Interfaces",  value: `${network}`,          sub: "Active IPv4",    accent: "#4ade80"  },
-      { label: "Hostname",    value: hostname.substring(0, 18), sub: platform,     accent: "#60a5fa"  },
-      { label: "Response",    value: `${ping}ms`,            sub: pingLabel,        accent: pingAccent },
-    ].forEach((card, i) => {
-      const cx = MX + i * (C3W + gap);
-      acrylicCardT(c, cx, R1Y, C3W, R1H, 12, th);
-      c.font = "19px 'UI'"; c.fillStyle = th.labelText; c.textAlign = "left";
-      c.fillText(card.label, cx + 16, R1Y + 30);
-      c.font = "bold 40px 'UI'"; c.fillStyle = card.accent;
-      c.fillText(card.value, cx + 16, R1Y + 84);
-      c.font = "18px 'UI'"; c.fillStyle = th.labelText2;
-      c.fillText(card.sub, cx + 16, R1Y + 112);
-    });
-
-    const R2Y = R1Y + R1H + 18;
-    acrylicCardT(c, MX, R2Y, MCW, 380, 14, th);
-    c.font = "bold 26px 'UI'"; c.fillStyle = th.labelText4; c.textAlign = "left";
-    c.fillText("Network Interfaces", MX + 20, R2Y + 38);
-
-    const IPs = netIPs.length > 0 ? netIPs : [{ name: "lo", address: "127.0.0.1", netmask: "255.0.0.0" }];
-    IPs.forEach((iface, i) => {
-      const iy = R2Y + 60 + i * 80;
-      acrylicCardT(c, MX + 10, iy, MCW - 20, 64, 8, th);
-      c.font = "bold 22px 'UI'"; c.fillStyle = "#60a5fa"; c.textAlign = "left";
-      c.fillText(iface.name, MX + 28, iy + 26);
-      c.font = "20px 'UI'"; c.fillStyle = th.networkIP;
-      c.fillText(`IP: ${iface.address}`, MX + 200, iy + 26);
-      c.font = "18px 'UI'"; c.fillStyle = th.networkMask;
-      c.fillText(`Netmask: ${iface.netmask}`, MX + 560, iy + 26);
-      c.beginPath(); c.arc(MX + MCW - 40, iy + 20, 7, 0, Math.PI * 2);
-      c.fillStyle = "#4ade80"; c.fill();
-      c.font = "17px 'UI'"; c.fillStyle = "#4ade80"; c.textAlign = "right";
-      c.fillText("Connected", MX + MCW - 54, iy + 26);
-    });
-
-    const R3Y = R2Y + 398, R3H = 200;
-    acrylicCardT(c, MX, R3Y, MCW, R3H, 14, th);
-    c.font = "bold 24px 'UI'"; c.fillStyle = th.labelText4; c.textAlign = "left";
-    c.fillText("System Network Info", MX + 20, R3Y + 36);
-    const netDetails = [
-      { k: "Hostname",     v: os.hostname()          },
-      { k: "Platform",     v: `${platform} ${arch}`  },
-      { k: "DNS Resolve",  v: "Active"               },
-      { k: "Ping",         v: `${ping}ms \u00b7 ${pingLabel}` },
-    ];
-    netDetails.forEach((row, i) => {
-      const dx = MX + 20 + i * ((MCW - 40) / 4);
-      acrylicCardT(c, dx, R3Y + 52, (MCW - 40) / 4 - 10, 120, 8, th);
-      c.font = "19px 'UI'"; c.fillStyle = th.labelText2; c.textAlign = "left";
-      c.fillText(row.k, dx + 14, R3Y + 82);
-      c.font = "bold 22px 'UI'"; c.fillStyle = "#60a5fa";
-      c.fillText(clipText(c, row.v, (MCW - 40) / 4 - 30), dx + 14, R3Y + 115);
-    });
-
-  } else if (page === "storage") {
-    drawPageHeader(c, MX, MY, WIN_X, WIN_W, "Storage", "Disk Overview", "#f472b6", th);
-
-    const R1Y = MY + 62, R1H = 130;
-    const C3W = (MCW - gap * 2) / 3;
-    [
-      { label: "Total Space",  value: `${diskTotal} GB`, sub: "Root filesystem", accent: "#f472b6" },
-      { label: "Used Space",   value: `${diskUsed} GB`,  sub: `${disk}% used`,   accent: disk > 80 ? "#f87171" : "#fb923c" },
-      { label: "Free Space",   value: `${(parseFloat(diskTotal) - parseFloat(diskUsed)).toFixed(1)} GB`, sub: `${100 - disk}% free`, accent: "#34d399" },
-    ].forEach((card, i) => {
-      const cx = MX + i * (C3W + gap);
-      acrylicCardT(c, cx, R1Y, C3W, R1H, 12, th);
-      c.font = "19px 'UI'"; c.fillStyle = th.labelText; c.textAlign = "left";
-      c.fillText(card.label, cx + 16, R1Y + 30);
-      c.font = "bold 40px 'UI'"; c.fillStyle = card.accent;
-      c.fillText(card.value, cx + 16, R1Y + 84);
-      c.font = "18px 'UI'"; c.fillStyle = th.labelText2;
-      c.fillText(card.sub, cx + 16, R1Y + 112);
-    });
-
-    const R2Y = R1Y + R1H + 18, R2H = 160;
-    acrylicCardT(c, MX, R2Y, MCW, R2H, 14, th);
-    c.font = "bold 22px 'UI'"; c.fillStyle = th.labelText3; c.textAlign = "left";
-    c.fillText("Disk Usage", MX + 18, R2Y + 34);
-    win11BarT(c, MX + 18, R2Y + 90, MCW - 36, disk, "#db2777", "#f472b6", "Root  /", disk, th);
-
-    const R3Y = R2Y + R2H + 18, R3H = 260;
-    acrylicCardT(c, MX, R3Y, MCW, R3H, 14, th);
-    c.font = "bold 24px 'UI'"; c.fillStyle = th.labelText4; c.textAlign = "left";
-    c.fillText("Filesystem Details", MX + 20, R3Y + 38);
-
-    const diskRows = [
-      { k: "Filesystem",    v: "/"                     },
-      { k: "Total",         v: `${diskTotal} GB`       },
-      { k: "Used",          v: `${diskUsed} GB`        },
-      { k: "Available",     v: `${(parseFloat(diskTotal) - parseFloat(diskUsed)).toFixed(1)} GB` },
-      { k: "Use%",          v: `${disk}%`              },
-      { k: "Temp",          v: `${temp}\u00b0C`        },
-    ];
-    diskRows.forEach((row, i) => {
-      const dy = R3Y + 68 + i * 32;
-      if (i % 2 === 0) {
-        roundRect(c, MX + 10, dy - 14, MCW - 20, 28, 6);
-        c.fillStyle = th.rowAlt; c.fill();
-      }
-      c.font = "20px 'UI'"; c.fillStyle = th.labelText; c.textAlign = "left";
-      c.fillText(row.k, MX + 24, dy + 5);
-      c.font = "bold 20px 'UI'"; c.fillStyle = "#f472b6"; c.textAlign = "right";
-      c.fillText(row.v, MX + MCW - 24, dy + 5);
-    });
-
-  } else if (page === "settings") {
-    drawPageHeader(c, MX, MY, WIN_X, WIN_W, "Settings", "System Configuration", "#a78bfa", th);
-
-    const items = [
-      { label: "Bot Version",       value: "3.0",                        accent: "#60a5fa" },
-      { label: "Node.js Version",   value: process.version,              accent: "#4ade80" },
-      { label: "Platform",          value: `${platform} ${arch}`,        accent: "#a78bfa" },
-      { label: "CPU Model",         value: cpuModel,                     accent: "#f59e0b" },
-      { label: "Hostname",          value: os.hostname(),                 accent: "#60a5fa" },
-      { label: "Total RAM",         value: `${ramGB} GB`,                accent: "#a78bfa" },
-      { label: "CPU Threads",       value: `${threads}`,                 accent: "#f472b6" },
-      { label: "Timezone",          value: "Asia/Dhaka (BDT)",           accent: "#34d399" },
-      { label: "Uptime",            value: uptime,                       accent: "#34d399" },
-      { label: "Load Average",      value: `${os.loadavg().map(l => l.toFixed(2)).join("  ")}`, accent: "#fb923c" },
-    ];
-
-    const R1Y = MY + 62;
-    const IW  = (MCW - gap) / 2;
-    items.forEach((item, i) => {
-      const col = i % 2, row = Math.floor(i / 2);
-      const ix = MX + col * (IW + gap);
-      const iy = R1Y + row * 90;
-      acrylicCardT(c, ix, iy, IW, 74, 10, th);
-      c.font = "19px 'UI'"; c.fillStyle = th.labelText2; c.textAlign = "left";
-      c.fillText(item.label, ix + 20, iy + 28);
-      c.font = "bold 26px 'UI'"; c.fillStyle = item.accent;
-      c.fillText(clipText(c, item.value, IW - 40), ix + 20, iy + 58);
-    });
-
-    const R2Y = R1Y + Math.ceil(items.length / 2) * 90 + 18;
-    const isDark = themeName === "dark";
-
-    // Appearance card with theme toggle
-    const TH_H = 110;
-    acrylicCardT(c, MX, R2Y, MCW, TH_H, 14, th);
-    c.font = "bold 22px 'UI'"; c.fillStyle = th.labelText4; c.textAlign = "left";
-    c.fillText("Appearance", MX + 20, R2Y + 34);
-
-    const BTN_W = 220, BTN_H = 48, BTN_Y = R2Y + 50;
-
-    // Dark button
-    const darkX = MX + 20;
-    roundRect(c, darkX, BTN_Y, BTN_W, BTN_H, 10);
-    c.fillStyle = isDark ? th.themeActiveBg : th.themeToggleBg;
-    c.fill();
-    roundRect(c, darkX, BTN_Y, BTN_W, BTN_H, 10);
-    c.strokeStyle = isDark ? th.themeActiveBg : th.themeToggleBorder;
-    c.lineWidth = 1.5; c.stroke();
-    c.font = "bold 22px 'UI'";
-    c.fillStyle = isDark ? th.themeActiveText : th.themeInactiveText;
-    c.textAlign = "center";
-    c.fillText("\uD83C\uDF19  Dark", darkX + BTN_W / 2, BTN_Y + 31);
-
-    // Light button
-    const lightX = MX + 20 + BTN_W + 16;
-    roundRect(c, lightX, BTN_Y, BTN_W, BTN_H, 10);
-    c.fillStyle = !isDark ? th.themeActiveBg : th.themeToggleBg;
-    c.fill();
-    roundRect(c, lightX, BTN_Y, BTN_W, BTN_H, 10);
-    c.strokeStyle = !isDark ? th.themeActiveBg : th.themeToggleBorder;
-    c.lineWidth = 1.5; c.stroke();
-    c.font = "bold 22px 'UI'";
-    c.fillStyle = !isDark ? th.themeActiveText : th.themeInactiveText;
-    c.textAlign = "center";
-    c.fillText("\u2600\uFE0F  Light", lightX + BTN_W / 2, BTN_Y + 31);
-
-    // hint text right side
-    c.font = "19px 'UI'"; c.fillStyle = th.labelText2; c.textAlign = "left";
-    c.fillText(
-      `Current: ${isDark ? "Dark" : "Light"}  \u2014  Reply "dark" or "light" to switch`,
-      MX + 20 + BTN_W * 2 + 40, BTN_Y + 31
+    ctx.fillText(
+      ch,
+      cx,
+      y
     );
 
-    // Commands card
-    const R3Y = R2Y + TH_H + 18;
-    acrylicCardT(c, MX, R3Y, MCW, 100, 14, th);
-    c.font = "bold 22px 'UI'"; c.fillStyle = th.labelText3; c.textAlign = "left";
-    c.fillText("Commands", MX + 20, R3Y + 34);
-    c.font = "20px 'UI'"; c.fillStyle = th.cmdText;
-    c.fillText("up \u00b7 uptime \u00b7 status \u00b7 sysinfo  \u2014  Reply: performance  network  storage  settings  dark  light", MX + 20, R3Y + 70);
+    cx +=
+      ctx.measureText(
+        ch
+      ).width +
+      spacing;
   }
-
-  return cv;
 }
 
-module.exports = {
-  config: {
-    name: "up",
-    aliases: ["uptime", "status", "sysinfo"],
-    version: "3.0",
-    author: "MOHAMMAD AKASH",
-    role: 0,
-    category: "system",
-    shortDescription: "Display system status in Windows 11 style"
-  },
+// ==========================================
+// 📊 PROGRESS BAR
+// ==========================================
+function drawProgressBar(
+  ctx,
+  x,
+  y,
+  w,
+  h,
+  pct,
+  color
+) {
 
-  onStart: async function ({ message, api, event }) {
-    try {
-      await sendPage("overview", message, api, event);
-    } catch (error) {
-      console.error("WIN11 MONITOR ERROR:", error);
-      message.reply("\u274C System monitor failed to generate.");
-    }
-  },
+  const safePct =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Number(pct) || 0
+      )
+    );
 
-  onChat: async function ({ event, api }) {
-    if (!event.body) return;
-    const body = event.body.toLowerCase().trim();
+  roundRect(
+    ctx,
+    x,
+    y,
+    w,
+    h,
+    h / 2
+  );
 
-    if (body === "hack") {
-      api.sendMessage("\uD83D\uDD12 Access Denied \u2014 Insufficient Privileges.", event.threadID);
-      return;
-    }
+  ctx.fillStyle =
+    "#0b1b33";
 
-    if (body === "dark" || body === "light") {
-      themeMap[event.threadID] = body;
-      const fakeMsg = {
-        reply: (data) => api.sendMessage(data, event.threadID, null, event.messageID)
-      };
-      try {
-        await sendPage("settings", fakeMsg, api, event);
-      } catch (error) {
-        console.error("WIN11 THEME ERROR:", error);
-        api.sendMessage(`\u2705 Theme switched to ${body}.`, event.threadID);
-      }
-      return;
-    }
+  ctx.fill();
 
-    const pages = ["performance", "network", "storage", "settings", "overview"];
-    if (pages.includes(body) && event.messageReply) {
-      try {
-        const fakeMsg = {
-          reply: (data) => api.sendMessage(data, event.threadID, null, event.messageID)
-        };
-        await sendPage(body, fakeMsg, api, event);
-      } catch (error) {
-        console.error("WIN11 PAGE ERROR:", error);
-        api.sendMessage("\u274C Failed to render page.", event.threadID);
-      }
-    }
+  const fillW =
+    Math.max(
+      h,
+      (
+        w *
+        safePct
+      ) / 100
+    );
+
+  roundRect(
+    ctx,
+    x,
+    y,
+    fillW,
+    h,
+    h / 2
+  );
+
+  ctx.fillStyle =
+    color;
+
+  ctx.shadowColor =
+    color;
+
+  ctx.shadowBlur =
+    14;
+
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+}
+
+// ==========================================
+// 🎯 GAUGE
+// ==========================================
+function drawGauge(
+  ctx,
+  cx,
+  cy,
+  radius,
+  pct,
+  color,
+  fontSize = 30
+) {
+
+  const safePct =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Number(pct) || 0
+      )
+    );
+
+  const start =
+    -Math.PI / 2;
+
+  const end =
+    start +
+    (
+      Math.PI *
+      2 *
+      safePct
+    ) / 100;
+
+  // background circle
+  ctx.beginPath();
+
+  ctx.arc(
+    cx,
+    cy,
+    radius,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.strokeStyle =
+    "#0b1b33";
+
+  ctx.lineWidth = 26;
+
+  ctx.stroke();
+
+  // active circle
+  ctx.beginPath();
+
+  ctx.arc(
+    cx,
+    cy,
+    radius,
+    start,
+    end
+  );
+
+  ctx.strokeStyle =
+    color;
+
+  ctx.lineWidth = 26;
+
+  ctx.lineCap =
+    "round";
+
+  ctx.shadowColor =
+    color;
+
+  ctx.shadowBlur =
+    20;
+
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+
+  // percentage
+  ctx.fillStyle =
+    C.white;
+
+  ctx.font =
+    `bold ${fontSize}px Sans`;
+
+  ctx.textAlign =
+    "center";
+
+  ctx.textBaseline =
+    "middle";
+
+  ctx.fillText(
+    `${safePct.toFixed(1)}%`,
+    cx,
+    cy
+  );
+
+  ctx.textAlign =
+    "left";
+
+  ctx.textBaseline =
+    "alphabetic";
+}
+
+// ==========================================
+// 📈 SPARKLINE
+// ==========================================
+function drawSparkline(
+  ctx,
+  x,
+  y,
+  w,
+  h,
+  data,
+  color
+) {
+
+  if (
+    !data ||
+    data.length < 2
+  ) {
+    return;
   }
-};
 
-async function sendPage(page, message, api, event) {
-  const start = Date.now();
-  const themeName = themeMap[event.threadID] || "dark";
-  const th = THEMES[themeName];
+  const max =
+    Math.max(
+      ...data,
+      1
+    );
 
-  const cpu      = Math.min(getCPU(), 99);
-  const total    = os.totalmem();
-  const used     = total - os.freemem();
-  const ram      = Math.min(Math.round((used / total) * 100), 99);
-  const disk     = Math.min(getDisk(), 99);
-  const network  = Math.min(getNetwork(), 9);
-  const temp     = getTemperature();
-  const threads  = os.cpus().length;
-  const platform = os.platform().toUpperCase();
-  const arch     = os.arch();
-  const hostname = os.hostname();
-  const load     = Math.min(parseFloat(os.loadavg()[0].toFixed(2)), 9.99);
-  const cpuModel = os.cpus()[0].model.split("@")[0].trim();
-  const ramGB    = (os.totalmem()  / 1024 / 1024 / 1024).toFixed(1);
-  const usedGB   = (used           / 1024 / 1024 / 1024).toFixed(1);
-  const diskTotal = getDiskTotal();
-  const diskUsed  = getDiskUsed();
-  const netIPs    = getNetworkIPs();
+  const step =
+    w /
+    (
+      data.length -
+      1
+    );
 
-  const sec = process.uptime();
-  const d   = Math.floor(sec / 86400);
-  const h   = Math.floor((sec % 86400) / 3600);
-  const m   = Math.floor((sec % 3600) / 60);
-  const s   = Math.floor(sec % 60);
-  const uptime = d > 0 ? `${d}d ${h}h ${m}m` : `${h}h ${m}m ${s}s`;
-  const ping   = Math.min(Date.now() - start, 9999);
+  ctx.beginPath();
 
-  let pingLabel = "Excellent", pingAccent = "#4ade80";
-  if (ping > 200)  { pingLabel = "Good";  pingAccent = "#facc15"; }
-  if (ping > 500)  { pingLabel = "Slow";  pingAccent = "#fb923c"; }
-  if (ping > 1000) { pingLabel = "Poor";  pingAccent = "#f87171"; }
+  data.forEach(
+    (v, i) => {
 
-  const sysStatus      = ping < 100 ? "All systems running" : ping < 300 ? "System stable" : "Lag detected";
-  const sysStatusColor = ping < 100 ? "#4ade80" : ping < 300 ? "#facc15" : "#f87171";
+      const px =
+        x +
+        i * step;
 
-  const sysData = {
-    cpu, ram, disk, network, temp, threads, platform, arch, hostname,
-    load, cpuModel, ramGB, usedGB, uptime, ping, pingLabel, pingAccent,
-    sysStatus, sysStatusColor, diskTotal, diskUsed, netIPs, themeName
-  };
+      const py =
+        y +
+        h -
+        (
+          v /
+          max
+        ) * h;
 
-  const cv = await renderPage(page, sysData, th);
-  const timestamp = Date.now();
-  const cacheDir = path.join(__dirname, "cache");
-  const file = path.join(cacheDir, `win11_${page}_${timestamp}.png`);
-  fs.mkdirSync(cacheDir, { recursive: true });
-  fs.writeFileSync(file, cv.toBuffer("image/png"));
+      if (
+        i === 0
+      ) {
+        ctx.moveTo(
+          px,
+          py
+        );
+      } else {
+        ctx.lineTo(
+          px,
+          py
+        );
+      }
+    }
+  );
 
-  await message.reply({ attachment: fs.createReadStream(file) });
-  setTimeout(() => { if (fs.existsSync(file)) fs.unlinkSync(file); }, 15000);
+  ctx.strokeStyle =
+    color;
+
+  ctx.lineWidth = 4;
+
+  ctx.shadowColor =
+    color;
+
+  ctx.shadowBlur =
+    10;
+
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+
+  // fill
+  ctx.lineTo(
+    x + w,
+    y + h
+  );
+
+  ctx.lineTo(
+    x,
+    y + h
+  );
+
+  ctx.closePath();
+
+  const grad =
+    ctx.createLinearGradient(
+      0,
+      y,
+      0,
+      y + h
+    );
+
+  grad.addColorStop(
+    0,
+    color + "55"
+  );
+
+  grad.addColorStop(
+    1,
+    color + "00"
+  );
+
+  ctx.fillStyle =
+    grad;
+
+  ctx.fill();
+}
+
+// ==========================================
+// 💾 FORMAT BYTES
+// ==========================================
+function fmtBytes(
+  bytes
+) {
+
+  return (
+    bytes /
+    1024 /
+    1024 /
+    1024
+  ).toFixed(2) +
+  " GB";
+}
+
+// ==========================================
+// ⏱️ FORMAT UPTIME
+// ==========================================
+function fmtUptime(
+  seconds
+) {
+
+  const d =
+    Math.floor(
+      seconds / 86400
+    );
+
+  const h =
+    Math.floor(
+      (seconds % 86400) /
+      3600
+    );
+
+  const m =
+    Math.floor(
+      (seconds % 3600) /
+      60
+    );
+
+  const sec =
+    Math.floor(
+      seconds % 60
+    );
+
+  return `${d}d ${h}h ${m}m ${sec}s`;
 }
