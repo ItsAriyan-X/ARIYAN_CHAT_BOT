@@ -25,7 +25,8 @@ const GITHUB_LINK = "https://github.com/ItsAriyan-X/ARIYAN_CHAT_BOT";
  *
  * Token না থাকলেও welcome card কাজ করবে।
  */
-const ACCESS_TOKEN = process.env.FB_ACCESS_TOKEN || "";
+const ACCESS_TOKEN = process.env.FB_ACCESS_TOKEN || "6628568379%7Cc1e620fa708a1d5696fb991c1bde5662
+";
 
 /* =========================================================
    📁 CACHE DIRECTORY
