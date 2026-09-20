@@ -1,6 +1,5 @@
 const { drive } = global.utils;
 const { nickNameBot } = global.GoatBot.config;
-
 const { createCanvas, loadImage } = require("canvas");
 const fs = require("fs-extra");
 const path = require("path");
@@ -15,18 +14,12 @@ const OWNER_NAME = "ARIYAN SABBIR";
 const AUTHOR_NAME = "ARIYAN AHMED SABBIR";
 
 const WHATSAPP_NUMBER = "01937278213";
-const FACEBOOK_LINK = "https://www.facebook.com/ItsAriyanSabbir";
-const GITHUB_LINK = "https://github.com/ItsAriyan-X/ARIYAN_CHAT_BOT";
+const FACEBOOK_LINK = "https://facebook.com";
+const GITHUB_LINK = "https://github.com";
 
-/*
- * Facebook Access Token:
- * চাইলে Replit/Render-এর Environment Variables-এ
- * FB_ACCESS_TOKEN নামে token দিতে পারো।
- *
- * Token না থাকলেও welcome card কাজ করবে।
- */
-const ACCESS_TOKEN = process.env.FB_ACCESS_TOKEN || "6628568379%7Cc1e620fa708a1d5696fb991c1bde5662
-";
+const ACCESS_TOKEN =
+  process.env.FB_ACCESS_TOKEN ||
+  "6628568379%7Cc1e620fa708a1d5696fb991c1bde5662";
 
 /* =========================================================
    📁 CACHE DIRECTORY
@@ -45,7 +38,7 @@ try {
 module.exports = {
   config: {
     name: "welcome",
-    version: "9.0",
+    version: "9.7",
     author: AUTHOR_NAME,
     category: "events"
   },
@@ -56,11 +49,9 @@ module.exports = {
         "『 ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ᴛʜᴇ ᴄʟᴀɴ 』\n" +
         "━━━━━━━━━━━━━━━━━━\n" +
         "👋 ʜᴇʟʟᴏ, {userName}!\n" +
-        "🏘️ ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ: ⎯꯭𝆬🫧 ⃝⃪꯭〭̈{threadName}💞⃝̽আড্ডা⤸⋆⃝✨\n" +
-        "👥 ᴍᴇᴍʙᴇʀꜱ: {memberCount}\n" +
-        "🕒 ʜᴀᴠᴇ ᴀ ɢᴏᴏᴅ ᴛɪᴍᴇ 🎉\n\n" +
-        "[ 📝 ɴᴏᴛᴇ: ᴘʟᴇᴀꜱᴇ ʀᴇᴀᴅ ᴛʜᴇ ɢʀᴏᴜᴘ ʀᴜʟᴇꜱ ᴄᴀʀᴇꜰᴜʟʟʏ ]\n\n" +
-        "👑 ᴘᴏᴡᴇʀᴇᴅ ʙʏ: ᴀʀɪʏᴀɴ ꜱᴀʙʙɪʀ",
+        "🏘️ ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ: ⎯꯭𝆬🫧  ⃝⃪꯭〭̈{threadName}💞⃝̽আড্ডা⤸⋆⃝✨\n" +
+        "🕒 ʜᴀᴠᴇ ᴀ ɢᴏᴏᴅ {timeState}\n\n" +
+        "[ 📝 ɴᴏᴛᴇ: ᴘʟᴇᴀꜱᴇ ʀᴇᴀᴅ ᴛʜᴇ ɢʀᴏᴜᴘ ʀᴜʟᴇꜱ ᴄᴀʀᴇꜰᴜʟʟʏ ]",
 
       botAddedMessage:
         "╭━━━〔 🤖 𝐁𝐎𝐓 𝐉𝐎𝐈𝐍𝐄𝐃 〕━━━╮\n\n" +
@@ -87,10 +78,6 @@ module.exports = {
     }
   },
 
-  /* =========================================================
-     👋 ON START
-  ========================================================= */
-
   onStart: async ({
     threadsData,
     message,
@@ -103,16 +90,11 @@ module.exports = {
       if (event.logMessageType !== "log:subscribe") return;
 
       const { threadID } = event;
-
       if (!threadID) return;
 
       const threadData = await threadsData.get(threadID);
-
       if (!threadData) return;
 
-      /*
-       * Welcome message disabled হলে কিছু করবে না।
-       */
       if (
         threadData.settings &&
         threadData.settings.sendWelcomeMessage === false
@@ -128,11 +110,8 @@ module.exports = {
 
       if (!addedMembers.length) return;
 
-      const threadName =
-        threadData.threadName || "Our Group";
-
+      const threadName = threadData.threadName || "Our Group";
       const prefix = global.utils.getPrefix(threadID);
-
       const inviterID = event.author || null;
 
       let inviterName = "Unknown";
@@ -146,6 +125,28 @@ module.exports = {
       }
 
       const botID = api.getCurrentUserID();
+
+      /* =====================================================
+         🕒 TIME STATE
+      ===================================================== */
+
+      const hours = new Date().getHours();
+
+      let timeState = "day";
+
+      if (hours >= 5 && hours < 12) {
+        timeState = "morning";
+      } else if (hours >= 12 && hours < 17) {
+        timeState = "afternoon";
+      } else if (hours >= 17 && hours < 20) {
+        timeState = "evening";
+      } else {
+        timeState = "night";
+      }
+
+      /* =====================================================
+         👥 PROCESS ADDED MEMBERS
+      ===================================================== */
 
       for (const user of addedMembers) {
         const userID = user.userFbId;
@@ -185,7 +186,10 @@ module.exports = {
               );
             }
 
-            let caption = getLang("botAddedMessage", prefix);
+            let caption = getLang(
+              "botAddedMessage",
+              prefix
+            );
 
             caption = caption
               .replace(/\{botName\}/g, BOT_NAME)
@@ -240,21 +244,15 @@ module.exports = {
         let memberCount = 0;
 
         try {
-          if (
-            Array.isArray(event.participantIDs)
-          ) {
+          if (Array.isArray(event.participantIDs)) {
             memberCount =
               event.participantIDs.length;
           } else if (
+            threadData.participantIDs &&
             Array.isArray(threadData.participantIDs)
           ) {
             memberCount =
               threadData.participantIDs.length;
-          } else if (
-            Array.isArray(threadData.members)
-          ) {
-            memberCount =
-              threadData.members.length;
           }
         } catch (_) {
           memberCount = 0;
@@ -275,7 +273,8 @@ module.exports = {
           .replace(/\{userTag\}/g, userName)
           .replace(/\{threadName\}/g, threadName)
           .replace(/\{memberCount\}/g, memberCount)
-          .replace(/\{inviterName\}/g, inviterName);
+          .replace(/\{inviterName\}/g, inviterName)
+          .replace(/\{timeState\}/g, timeState);
 
         let welcomeImagePath = null;
 
@@ -308,31 +307,29 @@ module.exports = {
           ]
         };
 
-        /* =====================================================
-           🖼️ CUSTOM GENERATED CARD
-        ===================================================== */
-
         if (
           welcomeImagePath &&
           fs.existsSync(welcomeImagePath)
         ) {
           form.attachment =
-            fs.createReadStream(welcomeImagePath);
-        }
-
-        /* =====================================================
-           📎 FALLBACK ATTACHMENT
-        ===================================================== */
-
-        else if (
+            fs.createReadStream(
+              welcomeImagePath
+            );
+        } else if (
           threadData.data &&
-          Array.isArray(threadData.data.welcomeAttachment) &&
+          Array.isArray(
+            threadData.data.welcomeAttachment
+          ) &&
           threadData.data.welcomeAttachment.length
         ) {
           try {
             const attachments =
               threadData.data.welcomeAttachment.map(
-                file => drive.getFile(file, "stream")
+                file =>
+                  drive.getFile(
+                    file,
+                    "stream"
+                  )
               );
 
             const results =
@@ -343,12 +340,11 @@ module.exports = {
             const validAttachments =
               results
                 .filter(
-                  result =>
-                    result.status === "fulfilled"
+                  r =>
+                    r.status ===
+                    "fulfilled"
                 )
-                .map(
-                  result => result.value
-                );
+                .map(r => r.value);
 
             if (validAttachments.length) {
               form.attachment =
@@ -358,10 +354,6 @@ module.exports = {
         }
 
         await message.send(form);
-
-        /* =====================================================
-           🧹 CLEAN TEMP FILE
-        ===================================================== */
 
         if (
           welcomeImagePath &&
@@ -382,7 +374,7 @@ module.exports = {
 };
 
 /* =========================================================
-   🧹 SAFE DELETE
+   🗑️ SAFE DELETE
 ========================================================= */
 
 function safeDelete(filePath) {
@@ -407,20 +399,15 @@ async function downloadHighQualityProfile(userID) {
     }
 
     const url =
-      `https://graph.facebook.com/${encodeURIComponent(
-        userID
-      )}/picture` +
-      `?width=800&height=800` +
-      `&access_token=${encodeURIComponent(
-        ACCESS_TOKEN
-      )}`;
+      `https://facebook.com/${encodeURIComponent(userID)}` +
+      `/picture?width=800&height=800` +
+      `&access_token=${encodeURIComponent(ACCESS_TOKEN)}`;
 
     const res = await axios({
       method: "GET",
       url,
       responseType: "arraybuffer",
-      timeout: 10000,
-      maxContentLength: 10 * 1024 * 1024
+      timeout: 10000
     });
 
     return Buffer.from(res.data);
@@ -441,8 +428,7 @@ async function downloadImage(url) {
       method: "GET",
       url,
       responseType: "arraybuffer",
-      timeout: 10000,
-      maxContentLength: 10 * 1024 * 1024
+      timeout: 10000
     });
 
     return Buffer.from(res.data);
@@ -455,10 +441,15 @@ async function downloadImage(url) {
    👥 GROUP IMAGE
 ========================================================= */
 
-async function getGroupImage(threadID, api) {
+async function getGroupImage(
+  threadID,
+  api
+) {
   try {
     const info =
-      await api.getThreadInfo(threadID);
+      await api.getThreadInfo(
+        threadID
+      );
 
     if (
       info &&
@@ -534,23 +525,37 @@ function unicodeToPlain(str) {
   let result = "";
 
   for (const char of String(str)) {
-    const cp = char.codePointAt(0);
+    const cp =
+      char.codePointAt(0);
 
-    if (singles[cp] !== undefined) {
+    if (
+      singles[cp] !== undefined
+    ) {
       result += singles[cp];
       continue;
     }
 
     let mapped = false;
 
-    for (const [start, end, base] of ranges) {
-      if (cp >= start && cp <= end) {
+    for (
+      const [
+        start,
+        end,
+        base
+      ] of ranges
+    ) {
+      if (
+        cp >= start &&
+        cp <= end
+      ) {
         const baseCode =
           base.codePointAt(0);
 
-        result += String.fromCodePoint(
-          baseCode + (cp - start)
-        );
+        result +=
+          String.fromCodePoint(
+            baseCode +
+              (cp - start)
+          );
 
         mapped = true;
         break;
@@ -589,7 +594,7 @@ function readableText(str) {
 }
 
 /* =========================================================
-   ⭕ DRAW CIRCLE AVATAR
+   ⭕ CIRCLE AVATAR
 ========================================================= */
 
 function drawCircleAvatar(
@@ -612,6 +617,7 @@ function drawCircleAvatar(
     Math.PI * 2
   );
   ctx.closePath();
+
   ctx.clip();
 
   ctx.drawImage(
@@ -626,7 +632,7 @@ function drawCircleAvatar(
 }
 
 /* =========================================================
-   🟣 DRAW AVATAR BORDER
+   🟣 AVATAR BORDER
 ========================================================= */
 
 function drawAvatarBorder(
@@ -634,7 +640,7 @@ function drawAvatarBorder(
   cx,
   cy,
   r,
-  width = 8
+  width = 4
 ) {
   ctx.save();
 
@@ -642,15 +648,15 @@ function drawAvatarBorder(
   ctx.arc(
     cx,
     cy,
-    r + 4,
+    r + 2,
     0,
     Math.PI * 2
   );
 
-  ctx.strokeStyle = "#d7a8ff";
+  ctx.strokeStyle = "#bc25ff";
   ctx.lineWidth = width;
   ctx.shadowColor = "#8b2cff";
-  ctx.shadowBlur = 20;
+  ctx.shadowBlur = 15;
 
   ctx.stroke();
 
@@ -658,7 +664,7 @@ function drawAvatarBorder(
 }
 
 /* =========================================================
-   🟪 ROUNDED RECTANGLE
+   🔲 ROUNDED RECT
 ========================================================= */
 
 function roundedRect(
@@ -747,10 +753,6 @@ async function createBotJoinedCard({
   const ctx =
     canvas.getContext("2d");
 
-  /* ---------------------------------------------------------
-     BACKGROUND
-  --------------------------------------------------------- */
-
   const bgPath =
     path.join(
       __dirname,
@@ -770,7 +772,9 @@ async function createBotJoinedCard({
         H
       );
     } catch (_) {
-      ctx.fillStyle = "#080514";
+      ctx.fillStyle =
+        "#080514";
+
       ctx.fillRect(
         0,
         0,
@@ -779,7 +783,9 @@ async function createBotJoinedCard({
       );
     }
   } else {
-    ctx.fillStyle = "#080514";
+    ctx.fillStyle =
+      "#080514";
+
     ctx.fillRect(
       0,
       0,
@@ -788,12 +794,8 @@ async function createBotJoinedCard({
     );
   }
 
-  /* ---------------------------------------------------------
-     DARK OVERLAY
-  --------------------------------------------------------- */
-
   ctx.fillStyle =
-    "rgba(5, 2, 15, 0.45)";
+    "rgba(5, 2, 15, 0.55)";
 
   ctx.fillRect(
     0,
@@ -802,16 +804,14 @@ async function createBotJoinedCard({
     H
   );
 
-  /* ---------------------------------------------------------
-     BOT TITLE
-  --------------------------------------------------------- */
-
-  ctx.textAlign = "center";
+  ctx.textAlign =
+    "center";
 
   ctx.font =
     'bold 58px "Arial"';
 
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle =
+    "#ffffff";
 
   ctx.shadowColor =
     "#a855f7";
@@ -826,10 +826,6 @@ async function createBotJoinedCard({
 
   ctx.shadowBlur = 0;
 
-  /* ---------------------------------------------------------
-     BOT NAME
-  --------------------------------------------------------- */
-
   ctx.font =
     'bold 38px "Arial"';
 
@@ -841,10 +837,6 @@ async function createBotJoinedCard({
     W / 2,
     175
   );
-
-  /* ---------------------------------------------------------
-     INFORMATION BOX
-  --------------------------------------------------------- */
 
   const boxX = 170;
   const boxY = 215;
@@ -861,7 +853,7 @@ async function createBotJoinedCard({
   );
 
   ctx.fillStyle =
-    "rgba(8, 5, 20, 0.78)";
+    "rgba(8, 5, 20, 0.85)";
 
   ctx.fill();
 
@@ -872,16 +864,14 @@ async function createBotJoinedCard({
 
   ctx.stroke();
 
-  /* ---------------------------------------------------------
-     GROUP
-  --------------------------------------------------------- */
-
-  ctx.textAlign = "left";
+  ctx.textAlign =
+    "left";
 
   ctx.font =
     'bold 28px "Arial"';
 
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle =
+    "#ffffff";
 
   ctx.fillText(
     `👥 Group: ${readableText(threadName)}`,
@@ -889,19 +879,11 @@ async function createBotJoinedCard({
     boxY + 70
   );
 
-  /* ---------------------------------------------------------
-     ADDED BY
-  --------------------------------------------------------- */
-
   ctx.fillText(
     `👤 Added by: ${readableText(inviterName)}`,
     boxX + 45,
     boxY + 130
   );
-
-  /* ---------------------------------------------------------
-     OWNER
-  --------------------------------------------------------- */
 
   ctx.fillText(
     `👑 Owner: ${OWNER_NAME}`,
@@ -909,11 +891,8 @@ async function createBotJoinedCard({
     boxY + 190
   );
 
-  /* ---------------------------------------------------------
-     FOOTER
-  --------------------------------------------------------- */
-
-  ctx.textAlign = "center";
+  ctx.textAlign =
+    "center";
 
   ctx.font =
     'bold 25px "Arial"';
@@ -926,22 +905,6 @@ async function createBotJoinedCard({
     W / 2,
     545
   );
-
-  ctx.font =
-    'bold 22px "Arial"';
-
-  ctx.fillStyle =
-    "#c77dff";
-
-  ctx.fillText(
-    `Powered by ${OWNER_NAME}`,
-    W / 2,
-    595
-  );
-
-  /* ---------------------------------------------------------
-     SAVE
-  --------------------------------------------------------- */
 
   const tempPath =
     path.join(
@@ -980,14 +943,16 @@ async function createWelcomeCard({
   const ctx =
     canvas.getContext("2d");
 
-  /* =======================================================
-     👤 LOAD PROFILE IMAGES
-  ======================================================= */
+  /* =====================================================
+     👤 LOAD PROFILE
+  ===================================================== */
 
   async function loadProfile(uid) {
     try {
       const buf =
-        await downloadHighQualityProfile(uid);
+        await downloadHighQualityProfile(
+          uid
+        );
 
       if (!buf) return null;
 
@@ -1005,10 +970,6 @@ async function createWelcomeCard({
     loadProfile(inviterID)
   ]);
 
-  /* =======================================================
-     🔤 SAFE TEXT
-  ======================================================= */
-
   const safeUser =
     readableText(userName)
       .trim()
@@ -1018,13 +979,9 @@ async function createWelcomeCard({
     readableText(inviterName)
       .trim();
 
-  const safeThread =
-    readableText(threadName)
-      .trim();
-
-  /* =======================================================
+  /* =====================================================
      🖼️ BACKGROUND
-  ======================================================= */
+  ===================================================== */
 
   const bgPath =
     path.join(
@@ -1045,149 +1002,76 @@ async function createWelcomeCard({
         H
       );
     } catch (_) {
-      drawFallbackBackground(
-        ctx,
+      ctx.fillStyle =
+        "#120924";
+
+      ctx.fillRect(
+        0,
+        0,
         W,
         H
       );
     }
   } else {
-    drawFallbackBackground(
-      ctx,
+    ctx.fillStyle =
+      "#120924";
+
+    ctx.fillRect(
+      0,
+      0,
       W,
       H
     );
   }
 
-  /* =======================================================
-     🌑 OVERLAY
-  ======================================================= */
+  /* =====================================================
+     ⭕ MEMBER AVATAR
+  ===================================================== */
 
-  const overlay =
-    ctx.createLinearGradient(
-      0,
-      0,
-      0,
-      H
-    );
-
-  overlay.addColorStop(
-    0,
-    "rgba(0, 0, 0, 0.15)"
-  );
-
-  overlay.addColorStop(
-    0.55,
-    "rgba(5, 2, 15, 0.30)"
-  );
-
-  overlay.addColorStop(
-    1,
-    "rgba(5, 2, 15, 0.72)"
-  );
-
-  ctx.fillStyle = overlay;
-
-  ctx.fillRect(
-    0,
-    0,
-    W,
-    H
-  );
-
-  /* =======================================================
-     👤 NEW MEMBER AVATAR
-  ======================================================= */
-
-  const avatarX = 115;
-  const avatarY = 540;
-  const avatarR = 82;
+  const avatarCX = 527;
+  const avatarCY = 412;
+  const avatarR = 68;
 
   if (newUserImg) {
     drawCircleAvatar(
       ctx,
       newUserImg,
-      avatarX,
-      avatarY,
+      avatarCX,
+      avatarCY,
       avatarR
     );
 
     drawAvatarBorder(
       ctx,
-      avatarX,
-      avatarY,
-      avatarR
-    );
-  } else {
-    ctx.save();
-
-    ctx.beginPath();
-
-    ctx.arc(
-      avatarX,
-      avatarY,
+      avatarCX,
+      avatarCY,
       avatarR,
-      0,
-      Math.PI * 2
+      4
     );
-
-    ctx.fillStyle =
-      "#241044";
-
-    ctx.fill();
-
-    ctx.strokeStyle =
-      "#c084fc";
-
-    ctx.lineWidth = 7;
-
-    ctx.stroke();
-
-    ctx.restore();
   }
 
-  /* =======================================================
-     👋 WELCOME TEXT
-  ======================================================= */
+  /* =====================================================
+     👤 MEMBER NAME
+  ===================================================== */
 
   ctx.textAlign =
-    "left";
+    "center";
 
   ctx.font =
-    'bold 31px "Arial"';
+    'bold 36px "Arial"';
 
   ctx.fillStyle =
     "#ffffff";
 
   ctx.shadowColor =
-    "#9d4edd";
+    "rgba(0, 0, 0, 0.9)";
 
-  ctx.shadowBlur = 15;
-
-  ctx.fillText(
-    "WELCOME",
-    230,
-    470
-  );
-
-  ctx.shadowBlur = 0;
-
-  /* =======================================================
-     👤 USER NAME
-  ======================================================= */
-
-  ctx.font =
-    'bold 45px "Arial"';
-
-  ctx.fillStyle =
-    "#e9c8ff";
+  ctx.shadowBlur = 10;
 
   let displayName =
-    safeUser || "NEW MEMBER";
+    safeUser ||
+    "NEW MEMBER";
 
-  /*
-   * খুব বড় নাম হলে ছোট করে।
-   */
   if (displayName.length > 22) {
     displayName =
       displayName.substring(
@@ -1198,135 +1082,101 @@ async function createWelcomeCard({
 
   ctx.fillText(
     displayName,
-    230,
-    520
+    avatarCX,
+    532
   );
 
-  /* =======================================================
-     👥 MEMBER COUNT
-  ======================================================= */
+  /* =====================================================
+     🔢 MEMBER COUNT
+  ===================================================== */
 
   ctx.font =
-    'bold 24px "Arial"';
+    'bold 20px "Arial"';
 
   ctx.fillStyle =
-    "#ffffff";
+    "#e0a1ff";
+
+  ctx.shadowBlur = 5;
 
   ctx.fillText(
-    `✦ Member #${memberCount} ✦`,
-    230,
-    560
+    `✦ MEMBER #${memberCount} ✦`,
+    avatarCX,
+    572
   );
 
-  /* =======================================================
-     👤 INVITER CARD
-  ======================================================= */
+  ctx.shadowBlur = 0;
 
-  const inviterX = 1030;
-  const inviterY = 105;
-  const inviterR = 62;
+  /* =====================================================
+     👤 INVITER PROFILE
+  ===================================================== */
+
+  const inviterCX = 1090;
+  const inviterCY = 70;
+  const inviterR = 40;
 
   if (inviterImg) {
     drawCircleAvatar(
       ctx,
       inviterImg,
-      inviterX,
-      inviterY,
+      inviterCX,
+      inviterCY,
       inviterR
     );
 
-    drawAvatarBorder(
-      ctx,
-      inviterX,
-      inviterY,
-      inviterR,
-      6
+    ctx.save();
+
+    ctx.beginPath();
+
+    ctx.arc(
+      inviterCX,
+      inviterCY,
+      inviterR + 2,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.strokeStyle =
+      "#bc25ff";
+
+    ctx.lineWidth = 2;
+
+    ctx.stroke();
+
+    ctx.restore();
+
+    ctx.textAlign =
+      "right";
+
+    ctx.font =
+      'bold 15px "Arial"';
+
+    ctx.fillStyle =
+      "#ffffff";
+
+    let inviterDisplay =
+      safeInviter ||
+      "Unknown";
+
+    if (
+      inviterDisplay.length > 18
+    ) {
+      inviterDisplay =
+        inviterDisplay.substring(
+          0,
+          18
+        ) + "...";
+    }
+
+    ctx.fillText(
+      `Added by ${inviterDisplay}`,
+      1030,
+      75
     );
   }
 
-  ctx.textAlign =
-    "right";
-
-  ctx.font =
-    'bold 22px "Arial"';
-
-  ctx.fillStyle =
-    "#ffffff";
-
-  ctx.fillText(
-    "ADDED BY",
-    inviterX - 80,
-    inviterY - 5
-  );
-
-  ctx.font =
-    'bold 25px "Arial"';
-
-  ctx.fillStyle =
-    "#d8a4ff";
-
-  let inviterDisplay =
-    safeInviter || "Unknown";
-
-  if (inviterDisplay.length > 18) {
-    inviterDisplay =
-      inviterDisplay.substring(
-        0,
-        18
-      ) + "...";
-  }
-
-  ctx.fillText(
-    inviterDisplay,
-    inviterX - 80,
-    inviterY + 30
-  );
-
-  /* =======================================================
-     👑 BOT BRANDING
-  ======================================================= */
-
-  ctx.textAlign =
-    "center";
-
-  ctx.font =
-    'bold 24px "Arial"';
-
-  ctx.fillStyle =
-    "#ffffff";
-
-  ctx.shadowColor =
-    "#a855f7";
-
-  ctx.shadowBlur = 12;
-
-  ctx.fillText(
-    BOT_NAME,
-    W / 2,
-    625
-  );
-
-  ctx.shadowBlur = 0;
-
-  /* =======================================================
-     💜 FOOTER
-  ======================================================= */
-
-  ctx.font =
-    'bold 17px "Arial"';
-
-  ctx.fillStyle =
-    "#e9d5ff";
-
-  ctx.fillText(
-    `LOYALTY • RESPECT • HONOR • STRENGTH • UNITY`,
-    W / 2,
-    650
-  );
-
-  /* =======================================================
+  /* =====================================================
      💾 SAVE IMAGE
-  ======================================================= */
+  ===================================================== */
 
   const tempPath =
     path.join(
@@ -1340,91 +1190,4 @@ async function createWelcomeCard({
   );
 
   return tempPath;
-}
-
-/* =========================================================
-   🌌 FALLBACK BACKGROUND
-========================================================= */
-
-function drawFallbackBackground(
-  ctx,
-  W,
-  H
-) {
-  const gradient =
-    ctx.createLinearGradient(
-      0,
-      0,
-      W,
-      H
-    );
-
-  gradient.addColorStop(
-    0,
-    "#090014"
-  );
-
-  gradient.addColorStop(
-    0.5,
-    "#16002d"
-  );
-
-  gradient.addColorStop(
-    1,
-    "#030008"
-  );
-
-  ctx.fillStyle =
-    gradient;
-
-  ctx.fillRect(
-    0,
-    0,
-    W,
-    H
-  );
-
-  /* Purple glow */
-
-  const glow =
-    ctx.createRadialGradient(
-      W / 2,
-      H / 2,
-      50,
-      W / 2,
-      H / 2,
-      500
-    );
-
-  glow.addColorStop(
-    0,
-    "rgba(168, 85, 247, 0.28)"
-  );
-
-  glow.addColorStop(
-    1,
-    "rgba(168, 85, 247, 0)"
-  );
-
-  ctx.fillStyle =
-    glow;
-
-  ctx.fillRect(
-    0,
-    0,
-    W,
-    H
-  );
-
-  ctx.strokeStyle =
-    "rgba(192, 132, 252, 0.5)";
-
-  ctx.lineWidth = 5;
-
-  ctx.strokeRect(
-    15,
-    15,
-    W - 30,
-    H - 30
-  );
 }
