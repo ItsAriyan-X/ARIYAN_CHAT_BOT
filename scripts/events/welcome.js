@@ -1,30 +1,73 @@
 const { drive } = global.utils;
 const { nickNameBot } = global.GoatBot.config;
+
 const { createCanvas, loadImage } = require("canvas");
 const fs = require("fs-extra");
 const path = require("path");
 const axios = require("axios");
 
+/* =========================================================
+   ⚙️ ARIYAN CHAT BOT SETTINGS
+========================================================= */
+
+const BOT_NAME = "ARIYAN CHAT BOT";
+const OWNER_NAME = "ARIYAN SABBIR";
+const AUTHOR_NAME = "ARIYAN AHMED SABBIR";
+
+const WHATSAPP_NUMBER = "01937278213";
+const FACEBOOK_LINK = "https://www.facebook.com/ItsAriyanSabbir";
+const GITHUB_LINK = "https://github.com/ItsAriyan-X/ARIYAN_CHAT_BOT";
+
+/*
+ * Facebook Access Token:
+ * চাইলে Replit/Render-এর Environment Variables-এ
+ * FB_ACCESS_TOKEN নামে token দিতে পারো।
+ *
+ * Token না থাকলেও welcome card কাজ করবে।
+ */
+const ACCESS_TOKEN = process.env.FB_ACCESS_TOKEN || "";
+
+/* =========================================================
+   📁 CACHE DIRECTORY
+========================================================= */
+
+const CACHE_DIR = path.join(__dirname, "welcome_cache");
+
+try {
+  fs.ensureDirSync(CACHE_DIR);
+} catch (_) {}
+
+/* =========================================================
+   📦 MODULE
+========================================================= */
+
 module.exports = {
   config: {
     name: "welcome",
-    version: "8.1",
-    author: "EryXenX + ARIYAN",
+    version: "9.0",
+    author: AUTHOR_NAME,
     category: "events"
   },
 
   langs: {
     en: {
       defaultWelcomeMessage:
-        "𝗪𝗲𝗹𝗰𝗼𝗺𝗲 {userName} 🎉\n" +
-        "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄\n" +
-        "✦ Glad to have you here! Enjoy your stay and make great memories 🌸",
+        "『 ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ᴛʜᴇ ᴄʟᴀɴ 』\n" +
+        "━━━━━━━━━━━━━━━━━━\n" +
+        "👋 ʜᴇʟʟᴏ, {userName}!\n" +
+        "🏘️ ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ: ⎯꯭𝆬🫧 ⃝⃪꯭〭̈{threadName}💞⃝̽আড্ডা⤸⋆⃝✨\n" +
+        "👥 ᴍᴇᴍʙᴇʀꜱ: {memberCount}\n" +
+        "🕒 ʜᴀᴠᴇ ᴀ ɢᴏᴏᴅ ᴛɪᴍᴇ 🎉\n\n" +
+        "[ 📝 ɴᴏᴛᴇ: ᴘʟᴇᴀꜱᴇ ʀᴇᴀᴅ ᴛʜᴇ ɢʀᴏᴜᴘ ʀᴜʟᴇꜱ ᴄᴀʀᴇꜰᴜʟʟʏ ]\n\n" +
+        "👑 ᴘᴏᴡᴇʀᴇᴅ ʙʏ: ᴀʀɪʏᴀɴ ꜱᴀʙʙɪʀ",
 
       botAddedMessage:
         "╭━━━〔 🤖 𝐁𝐎𝐓 𝐉𝐎𝐈𝐍𝐄𝐃 〕━━━╮\n\n" +
         "🌸 আমাকে আপনাদের গ্রুপে এড করার জন্য\n" +
         "অসংখ্য ধন্যবাদ। ❤️\n\n" +
         "━━━━━━━━━━━━━━━━━━\n\n" +
+        "🤖 𝐁𝐎𝐓\n" +
+        "➜ {botName}\n\n" +
         "👥 𝐆𝐑𝐎𝐔𝐏\n" +
         "➜ {threadName}\n\n" +
         "👤 𝐀𝐃𝐃𝐄𝐃 𝐁𝐘\n" +
@@ -32,14 +75,20 @@ module.exports = {
         "━━━━━━━━━━━━━━━━━━\n\n" +
         "⚠️ কোনো সমস্যা হলে,\n" +
         "আমার বসকে মেসেজ করুন।\n\n" +
-        "👑 𝐁𝐎𝐒𝐒 : 𝐀𝐑𝐈𝐘𝐀𝐍\n\n" +
+        "👑 𝐁𝐎𝐒𝐒 : {ownerName}\n\n" +
         "💬 𝐖𝐇𝐀𝐓𝐒𝐀𝐏𝐏\n" +
-        "➜ 01937278213\n\n" +
+        "➜ {whatsapp}\n\n" +
         "🔵 𝐅𝐀𝐂𝐄𝐁𝐎𝐎𝐊\n" +
-        "➜ https://www.facebook.com/ItsAriyanSabbir?mibextid=ZbWKwL\n\n" +
+        "➜ {facebook}\n\n" +
+        "🐙 𝐆𝐈𝐓𝐇𝐔𝐁\n" +
+        "➜ {github}\n\n" +
         "╰━━━━━━━━━━━━━━━━━━╯"
     }
   },
+
+  /* =========================================================
+     👋 ON START
+  ========================================================= */
 
   onStart: async ({
     threadsData,
@@ -49,279 +98,360 @@ module.exports = {
     usersData,
     getLang
   }) => {
-    if (event.logMessageType !== "log:subscribe") return;
+    try {
+      if (event.logMessageType !== "log:subscribe") return;
 
-    const { threadID } = event;
-    const threadData = await threadsData.get(threadID);
+      const { threadID } = event;
 
-    if (!threadData.settings.sendWelcomeMessage) return;
+      if (!threadID) return;
 
-    const addedMembers =
-      event.logMessageData.addedParticipants;
+      const threadData = await threadsData.get(threadID);
 
-    const threadName =
-      threadData.threadName || "Our Group";
+      if (!threadData) return;
 
-    const prefix =
-      global.utils.getPrefix(threadID);
+      /*
+       * Welcome message disabled হলে কিছু করবে না।
+       */
+      if (
+        threadData.settings &&
+        threadData.settings.sendWelcomeMessage === false
+      ) {
+        return;
+      }
 
-    const inviterID = event.author;
+      const addedMembers =
+        event.logMessageData &&
+        Array.isArray(event.logMessageData.addedParticipants)
+          ? event.logMessageData.addedParticipants
+          : [];
 
-    for (const user of addedMembers) {
-      const userID = user.userFbId;
+      if (!addedMembers.length) return;
+
+      const threadName =
+        threadData.threadName || "Our Group";
+
+      const prefix = global.utils.getPrefix(threadID);
+
+      const inviterID = event.author || null;
+
+      let inviterName = "Unknown";
+
+      if (inviterID) {
+        try {
+          inviterName = await usersData.getName(inviterID);
+        } catch (_) {
+          inviterName = "Unknown";
+        }
+      }
+
       const botID = api.getCurrentUserID();
 
-      if (userID == botID) {
-        if (nickNameBot) {
+      for (const user of addedMembers) {
+        const userID = user.userFbId;
+
+        if (!userID) continue;
+
+        /* =====================================================
+           🤖 BOT ADDED
+        ===================================================== */
+
+        if (String(userID) === String(botID)) {
           try {
-            await api.changeNickname(
-              nickNameBot,
-              threadID,
-              botID
+            if (nickNameBot) {
+              try {
+                await api.changeNickname(
+                  nickNameBot,
+                  threadID,
+                  botID
+                );
+              } catch (_) {}
+            }
+
+            let botCardPath = null;
+
+            try {
+              botCardPath = await createBotJoinedCard({
+                threadName,
+                inviterName,
+                inviterID,
+                threadID,
+                api
+              });
+            } catch (err) {
+              console.error(
+                "[WELCOME] Bot card error:",
+                err
+              );
+            }
+
+            let caption = getLang("botAddedMessage", prefix);
+
+            caption = caption
+              .replace(/\{botName\}/g, BOT_NAME)
+              .replace(/\{ownerName\}/g, OWNER_NAME)
+              .replace(/\{whatsapp\}/g, WHATSAPP_NUMBER)
+              .replace(/\{facebook\}/g, FACEBOOK_LINK)
+              .replace(/\{github\}/g, GITHUB_LINK)
+              .replace(/\{threadName\}/g, threadName)
+              .replace(/\{inviterName\}/g, inviterName);
+
+            const form = {
+              body: caption
+            };
+
+            if (
+              botCardPath &&
+              fs.existsSync(botCardPath)
+            ) {
+              form.attachment =
+                fs.createReadStream(botCardPath);
+            }
+
+            await message.send(form);
+
+            if (
+              botCardPath &&
+              fs.existsSync(botCardPath)
+            ) {
+              setTimeout(() => {
+                safeDelete(botCardPath);
+              }, 10000);
+            }
+          } catch (err) {
+            console.error(
+              "[WELCOME] Bot joined error:",
+              err
             );
-          } catch (_) {}
+          }
+
+          continue;
         }
 
-        let inviterName = "Unknown";
+        /* =====================================================
+           👤 NEW MEMBER
+        ===================================================== */
+
+        const userName =
+          user.fullName ||
+          user.name ||
+          "New Member";
+
+        let memberCount = 0;
 
         try {
-          inviterName =
-            await usersData.getName(inviterID);
-        } catch (_) {}
+          if (
+            Array.isArray(event.participantIDs)
+          ) {
+            memberCount =
+              event.participantIDs.length;
+          } else if (
+            Array.isArray(threadData.participantIDs)
+          ) {
+            memberCount =
+              threadData.participantIDs.length;
+          } else if (
+            Array.isArray(threadData.members)
+          ) {
+            memberCount =
+              threadData.members.length;
+          }
+        } catch (_) {
+          memberCount = 0;
+        }
 
-        let botCardPath = null;
+        if (!memberCount) {
+          memberCount = "NEW";
+        }
+
+        let welcomeMessage =
+          threadData.data &&
+          threadData.data.welcomeMessage
+            ? threadData.data.welcomeMessage
+            : getLang("defaultWelcomeMessage");
+
+        welcomeMessage = String(welcomeMessage)
+          .replace(/\{userName\}/g, userName)
+          .replace(/\{userTag\}/g, userName)
+          .replace(/\{threadName\}/g, threadName)
+          .replace(/\{memberCount\}/g, memberCount)
+          .replace(/\{inviterName\}/g, inviterName);
+
+        let welcomeImagePath = null;
 
         try {
-          botCardPath =
-            await createBotJoinedCard({
+          welcomeImagePath =
+            await createWelcomeCard({
+              userName,
               threadName,
+              memberCount,
               inviterName,
+              newUserID: userID,
               inviterID,
               threadID,
               api
             });
         } catch (err) {
           console.error(
-            "Bot Joined Card creation failed:",
+            "[WELCOME] Welcome card error:",
             err
           );
         }
 
-        const caption =
-          getLang("botAddedMessage", prefix)
-            .replace(
-              /\{threadName\}/g,
-              threadName
-            )
-            .replace(
-              /\{inviterName\}/g,
-              inviterName
-            );
-
         const form = {
-          body: caption
+          body: welcomeMessage,
+          mentions: [
+            {
+              tag: userName,
+              id: userID
+            }
+          ]
         };
 
+        /* =====================================================
+           🖼️ CUSTOM GENERATED CARD
+        ===================================================== */
+
         if (
-          botCardPath &&
-          fs.existsSync(botCardPath)
+          welcomeImagePath &&
+          fs.existsSync(welcomeImagePath)
         ) {
           form.attachment =
-            fs.createReadStream(botCardPath);
+            fs.createReadStream(welcomeImagePath);
+        }
+
+        /* =====================================================
+           📎 FALLBACK ATTACHMENT
+        ===================================================== */
+
+        else if (
+          threadData.data &&
+          Array.isArray(threadData.data.welcomeAttachment) &&
+          threadData.data.welcomeAttachment.length
+        ) {
+          try {
+            const attachments =
+              threadData.data.welcomeAttachment.map(
+                file => drive.getFile(file, "stream")
+              );
+
+            const results =
+              await Promise.allSettled(
+                attachments
+              );
+
+            const validAttachments =
+              results
+                .filter(
+                  result =>
+                    result.status === "fulfilled"
+                )
+                .map(
+                  result => result.value
+                );
+
+            if (validAttachments.length) {
+              form.attachment =
+                validAttachments;
+            }
+          } catch (_) {}
         }
 
         await message.send(form);
 
+        /* =====================================================
+           🧹 CLEAN TEMP FILE
+        ===================================================== */
+
         if (
-          botCardPath &&
-          fs.existsSync(botCardPath)
+          welcomeImagePath &&
+          fs.existsSync(welcomeImagePath)
         ) {
           setTimeout(() => {
-            try {
-              fs.unlinkSync(botCardPath);
-            } catch (_) {}
-          }, 7000);
+            safeDelete(welcomeImagePath);
+          }, 10000);
         }
-
-        return;
       }
-
-      const userName = user.fullName;
-
-      let inviterName = "Unknown";
-
-      try {
-        inviterName =
-          await usersData.getName(inviterID);
-      } catch (_) {}
-
-      const memberCount =
-        event.participantIDs.length;
-
-      let {
-        welcomeMessage =
-          getLang("defaultWelcomeMessage")
-      } = threadData.data;
-
-      welcomeMessage = welcomeMessage
-        .replace(
-          /\{userName\}/g,
-          userName
-        )
-        .replace(
-          /\{userTag\}/g,
-          userName
-        )
-        .replace(
-          /\{threadName\}/g,
-          threadName
-        )
-        .replace(
-          /\{memberCount\}/g,
-          memberCount
-        )
-        .replace(
-          /\{inviterName\}/g,
-          inviterName
-        );
-
-      let welcomeImagePath = null;
-
-      try {
-        welcomeImagePath =
-          await createWelcomeCard({
-            userName,
-            threadName,
-            memberCount,
-            inviterName,
-            newUserID: userID,
-            inviterID,
-            threadID,
-            api
-          });
-      } catch (err) {
-        console.error(
-          "Welcome image creation failed:",
-          err
-        );
-      }
-
-      const form = {
-        body: welcomeMessage,
-        mentions: [
-          {
-            tag: userName,
-            id: userID
-          }
-        ]
-      };
-
-      if (
-        welcomeImagePath &&
-        fs.existsSync(welcomeImagePath)
-      ) {
-        form.attachment =
-          fs.createReadStream(
-            welcomeImagePath
-          );
-      } else if (
-        threadData.data.welcomeAttachment
-      ) {
-        const attachments =
-          threadData.data.welcomeAttachment.map(
-            f => drive.getFile(f, "stream")
-          );
-
-        form.attachment =
-          (
-            await Promise.allSettled(
-              attachments
-            )
-          )
-            .filter(
-              ({ status }) =>
-                status === "fulfilled"
-            )
-            .map(
-              ({ value }) => value
-            );
-      }
-
-      await message.send(form);
-
-      if (
-        welcomeImagePath &&
-        fs.existsSync(welcomeImagePath)
-      ) {
-        setTimeout(() => {
-          try {
-            fs.unlinkSync(
-              welcomeImagePath
-            );
-          } catch (_) {}
-        }, 5000);
-      }
+    } catch (err) {
+      console.error(
+        "[WELCOME] Main error:",
+        err
+      );
     }
   }
 };
 
 /* =========================================================
-🔑 FACEBOOK ACCESS TOKEN
+   🧹 SAFE DELETE
 ========================================================= */
 
-const ACCESS_TOKEN =
-  "6628568379%7Cc1e620fa708a1d5696fb991c1bde5662";
+function safeDelete(filePath) {
+  try {
+    if (
+      filePath &&
+      fs.existsSync(filePath)
+    ) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (_) {}
+}
 
 /* =========================================================
-📥 DOWNLOAD PROFILE
+   📥 DOWNLOAD FACEBOOK PROFILE
 ========================================================= */
 
 async function downloadHighQualityProfile(userID) {
   try {
+    if (!ACCESS_TOKEN || !userID) {
+      return null;
+    }
+
     const url =
-      `https://graph.facebook.com/${userID}/picture` +
-      `?width=500&height=500&access_token=${ACCESS_TOKEN}`;
+      `https://graph.facebook.com/${encodeURIComponent(
+        userID
+      )}/picture` +
+      `?width=800&height=800` +
+      `&access_token=${encodeURIComponent(
+        ACCESS_TOKEN
+      )}`;
 
     const res = await axios({
       method: "GET",
       url,
       responseType: "arraybuffer",
-      timeout: 10000
+      timeout: 10000,
+      maxContentLength: 10 * 1024 * 1024
     });
 
-    return Buffer.from(
-      res.data,
-      "binary"
-    );
-  } catch {
+    return Buffer.from(res.data);
+  } catch (_) {
     return null;
   }
 }
 
 /* =========================================================
-📥 DOWNLOAD IMAGE
+   🖼️ DOWNLOAD IMAGE
 ========================================================= */
 
 async function downloadImage(url) {
   try {
+    if (!url) return null;
+
     const res = await axios({
       method: "GET",
       url,
       responseType: "arraybuffer",
-      timeout: 10000
+      timeout: 10000,
+      maxContentLength: 10 * 1024 * 1024
     });
 
-    return Buffer.from(
-      res.data,
-      "binary"
-    );
-  } catch {
+    return Buffer.from(res.data);
+  } catch (_) {
     return null;
   }
 }
 
 /* =========================================================
-👥 GROUP IMAGE
+   👥 GROUP IMAGE
 ========================================================= */
 
 async function getGroupImage(threadID, api) {
@@ -329,26 +459,21 @@ async function getGroupImage(threadID, api) {
     const info =
       await api.getThreadInfo(threadID);
 
-    if (info.imageSrc) {
-      const res = await axios({
-        method: "GET",
-        url: info.imageSrc,
-        responseType: "arraybuffer",
-        timeout: 10000
-      });
-
-      return Buffer.from(
-        res.data,
-        "binary"
+    if (
+      info &&
+      info.imageSrc
+    ) {
+      return await downloadImage(
+        info.imageSrc
       );
     }
-  } catch {}
+  } catch (_) {}
 
   return null;
 }
 
 /* =========================================================
-🔤 UNICODE → PLAIN
+   🔤 UNICODE TO PLAIN
 ========================================================= */
 
 function unicodeToPlain(str) {
@@ -407,56 +532,52 @@ function unicodeToPlain(str) {
 
   let result = "";
 
-  for (const char of str) {
+  for (const char of String(str)) {
     const cp = char.codePointAt(0);
 
-    if (
-      singles[cp] !== undefined
-    ) {
+    if (singles[cp] !== undefined) {
       result += singles[cp];
       continue;
     }
 
     let mapped = false;
 
-    for (
-      const [start, end, base]
-      of ranges
-    ) {
-      if (
-        cp >= start &&
-        cp <= end
-      ) {
+    for (const [start, end, base] of ranges) {
+      if (cp >= start && cp <= end) {
         const baseCode =
           base.codePointAt(0);
 
-        result +=
-          String.fromCodePoint(
-            baseCode +
-            (cp - start)
-          );
+        result += String.fromCodePoint(
+          baseCode + (cp - start)
+        );
 
         mapped = true;
         break;
       }
     }
 
-    if (!mapped)
+    if (!mapped) {
       result += char;
+    }
   }
 
   return result;
 }
 
+/* =========================================================
+   🔤 SAFE STRING
+========================================================= */
+
 function safeStr(str) {
   if (!str) return "";
 
   try {
-    return Buffer
-      .from(str, "latin1")
-      .toString("utf8");
-  } catch {
-    return str;
+    return Buffer.from(
+      String(str),
+      "latin1"
+    ).toString("utf8");
+  } catch (_) {
+    return String(str);
   }
 }
 
@@ -467,101 +588,7 @@ function readableText(str) {
 }
 
 /* =========================================================
-🔢 ORDINAL
-========================================================= */
-
-function ordinal(n) {
-  const s = [
-    "th",
-    "st",
-    "nd",
-    "rd"
-  ];
-
-  const v = n % 100;
-
-  return (
-    n +
-    (
-      s[(v - 20) % 10] ||
-      s[v] ||
-      s[0]
-    )
-  );
-}
-
-/* =========================================================
-🔲 ROUNDED RECTANGLE
-========================================================= */
-
-function roundRect(
-  ctx,
-  x,
-  y,
-  w,
-  h,
-  r
-) {
-  ctx.beginPath();
-
-  ctx.moveTo(
-    x + r,
-    y
-  );
-
-  ctx.lineTo(
-    x + w - r,
-    y
-  );
-
-  ctx.quadraticCurveTo(
-    x + w,
-    y,
-    x + w,
-    y + r
-  );
-
-  ctx.lineTo(
-    x + w,
-    y + h - r
-  );
-
-  ctx.quadraticCurveTo(
-    x + w,
-    y + h,
-    x + w - r,
-    y + h
-  );
-
-  ctx.lineTo(
-    x + r,
-    y + h
-  );
-
-  ctx.quadraticCurveTo(
-    x,
-    y + h,
-    x,
-    y + h - r
-  );
-
-  ctx.lineTo(
-    x,
-    y + r
-  );
-
-  ctx.quadraticCurveTo(
-    x,
-    y,
-    x + r,
-    y
-  );
-
-  ctx.closePath();
-}
-
-/* =========================================================
-👤 CIRCLE AVATAR
+   ⭕ DRAW CIRCLE AVATAR
 ========================================================= */
 
 function drawCircleAvatar(
@@ -571,10 +598,11 @@ function drawCircleAvatar(
   cy,
   r
 ) {
+  if (!img) return;
+
   ctx.save();
 
   ctx.beginPath();
-
   ctx.arc(
     cx,
     cy,
@@ -582,9 +610,7 @@ function drawCircleAvatar(
     0,
     Math.PI * 2
   );
-
   ctx.closePath();
-
   ctx.clip();
 
   ctx.drawImage(
@@ -599,63 +625,109 @@ function drawCircleAvatar(
 }
 
 /* =========================================================
-✍️ FIT TEXT
+   🟣 DRAW AVATAR BORDER
 ========================================================= */
 
-function fitText(
+function drawAvatarBorder(
   ctx,
-  text,
-  maxPx,
-  maxSize = 34,
-  minSize = 14,
-  bold = true
+  cx,
+  cy,
+  r,
+  width = 8
 ) {
-  let t = text;
-  let size = maxSize;
+  ctx.save();
 
-  const w =
-    bold
-      ? "bold"
-      : "400";
+  ctx.beginPath();
+  ctx.arc(
+    cx,
+    cy,
+    r + 4,
+    0,
+    Math.PI * 2
+  );
 
-  ctx.font =
-    `${w} ${size}px "Segoe UI", Arial`;
+  ctx.strokeStyle = "#d7a8ff";
+  ctx.lineWidth = width;
+  ctx.shadowColor = "#8b2cff";
+  ctx.shadowBlur = 20;
 
-  while (
-    ctx.measureText(t).width >
-      maxPx &&
-    size > minSize
-  ) {
-    size--;
+  ctx.stroke();
 
-    ctx.font =
-      `${w} ${size}px "Segoe UI", Arial`;
-  }
-
-  if (
-    ctx.measureText(t).width >
-      maxPx
-  ) {
-    while (
-      ctx.measureText(
-        t + "…"
-      ).width > maxPx &&
-      t.length > 1
-    ) {
-      t = t.slice(0, -1);
-    }
-
-    t += "…";
-  }
-
-  return {
-    text: t,
-    size
-  };
+  ctx.restore();
 }
 
 /* =========================================================
-🤖 BOT JOINED CARD
+   🟪 ROUNDED RECTANGLE
+========================================================= */
+
+function roundedRect(
+  ctx,
+  x,
+  y,
+  width,
+  height,
+  radius
+) {
+  ctx.beginPath();
+
+  ctx.moveTo(
+    x + radius,
+    y
+  );
+
+  ctx.lineTo(
+    x + width - radius,
+    y
+  );
+
+  ctx.quadraticCurveTo(
+    x + width,
+    y,
+    x + width,
+    y + radius
+  );
+
+  ctx.lineTo(
+    x + width,
+    y + height - radius
+  );
+
+  ctx.quadraticCurveTo(
+    x + width,
+    y + height,
+    x + width - radius,
+    y + height
+  );
+
+  ctx.lineTo(
+    x + radius,
+    y + height
+  );
+
+  ctx.quadraticCurveTo(
+    x,
+    y + height,
+    x,
+    y + height - radius
+  );
+
+  ctx.lineTo(
+    x,
+    y + radius
+  );
+
+  ctx.quadraticCurveTo(
+    x,
+    y,
+    x + radius,
+    y
+  );
+
+  ctx.closePath();
+}
+
+/* =========================================================
+   🤖 BOT JOINED CARD
 ========================================================= */
 
 async function createBotJoinedCard({
@@ -666,7 +738,7 @@ async function createBotJoinedCard({
   api
 }) {
   const W = 1200;
-  const H = 630;
+  const H = 675;
 
   const canvas =
     createCanvas(W, H);
@@ -674,116 +746,53 @@ async function createBotJoinedCard({
   const ctx =
     canvas.getContext("2d");
 
-  async function loadProfile(uid) {
-    const buf =
-      await downloadHighQualityProfile(
-        uid
-      );
+  /* ---------------------------------------------------------
+     BACKGROUND
+  --------------------------------------------------------- */
 
-    if (buf) {
-      return loadImage(buf)
-        .catch(() => null);
-    }
+  const bgPath =
+    path.join(
+      __dirname,
+      "welcome_bg.png"
+    );
 
+  if (fs.existsSync(bgPath)) {
     try {
-      const info =
-        await api.getUserInfo([uid]);
+      const bg =
+        await loadImage(bgPath);
 
-      const src =
-        info[uid]?.thumbSrc;
-
-      if (src) {
-        const b2 =
-          await downloadImage(src);
-
-        if (b2) {
-          return loadImage(b2)
-            .catch(() => null);
-        }
-      }
-    } catch {}
-
-    return null;
-  }
-
-  const [
-    inviterImg,
-    groupImg
-  ] = await Promise.all([
-    loadProfile(inviterID),
-
-    getGroupImage(
-      threadID,
-      api
-    ).then(
-      b =>
-        b
-          ? loadImage(b)
-              .catch(() => null)
-          : null
-    )
-  ]);
-
-  const safeInviter =
-    readableText(inviterName);
-
-  const safeGroup =
-    readableText(threadName);
-
-  const bg =
-    ctx.createLinearGradient(
+      ctx.drawImage(
+        bg,
+        0,
+        0,
+        W,
+        H
+      );
+    } catch (_) {
+      ctx.fillStyle = "#080514";
+      ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+      );
+    }
+  } else {
+    ctx.fillStyle = "#080514";
+    ctx.fillRect(
       0,
       0,
       W,
       H
     );
+  }
 
-  bg.addColorStop(
-    0,
-    "#070912"
-  );
-
-  bg.addColorStop(
-    0.5,
-    "#0b1020"
-  );
-
-  bg.addColorStop(
-    1,
-    "#05060c"
-  );
-
-  ctx.fillStyle = bg;
-
-  ctx.fillRect(
-    0,
-    0,
-    W,
-    H
-  );
-
-  const glow =
-    ctx.createRadialGradient(
-      W / 2,
-      210,
-      20,
-      W / 2,
-      210,
-      430
-    );
-
-  glow.addColorStop(
-    0,
-    "rgba(0,200,255,0.18)"
-  );
-
-  glow.addColorStop(
-    1,
-    "rgba(0,0,0,0)"
-  );
+  /* ---------------------------------------------------------
+     DARK OVERLAY
+  --------------------------------------------------------- */
 
   ctx.fillStyle =
-    glow;
+    "rgba(5, 2, 15, 0.45)";
 
   ctx.fillRect(
     0,
@@ -792,467 +801,150 @@ async function createBotJoinedCard({
     H
   );
 
-  ctx.save();
+  /* ---------------------------------------------------------
+     BOT TITLE
+  --------------------------------------------------------- */
+
+  ctx.textAlign = "center";
+
+  ctx.font =
+    'bold 58px "Arial"';
+
+  ctx.fillStyle = "#ffffff";
 
   ctx.shadowColor =
-    "rgba(0,200,255,0.55)";
+    "#a855f7";
 
   ctx.shadowBlur = 25;
 
-  ctx.strokeStyle =
-    "rgba(0,200,255,0.35)";
-
-  ctx.lineWidth = 3;
-
-  roundRect(
-    ctx,
-    8,
-    8,
-    W - 16,
-    H - 16,
-    24
-  );
-
-  ctx.stroke();
-
-  ctx.restore();
-
-  ctx.textAlign =
-    "center";
-
-  ctx.font =
-    'bold 58px "Segoe UI", Arial';
-
-  const titleGrad =
-    ctx.createLinearGradient(
-      300,
-      0,
-      900,
-      0
-    );
-
-  titleGrad.addColorStop(
-    0,
-    "#ffffff"
-  );
-
-  titleGrad.addColorStop(
-    0.5,
-    "#55ddff"
-  );
-
-  titleGrad.addColorStop(
-    1,
-    "#ffffff"
-  );
-
-  ctx.fillStyle =
-    titleGrad;
-
-  ctx.shadowColor =
-    "rgba(0,210,255,0.65)";
-
-  ctx.shadowBlur = 18;
-
   ctx.fillText(
-    "🤖  BOT JOINED",
+    "🤖 BOT JOINED",
     W / 2,
-    82
+    125
   );
 
   ctx.shadowBlur = 0;
 
+  /* ---------------------------------------------------------
+     BOT NAME
+  --------------------------------------------------------- */
+
   ctx.font =
-    '500 18px "Segoe UI", Arial';
+    'bold 38px "Arial"';
 
   ctx.fillStyle =
-    "rgba(255,255,255,0.55)";
+    "#d9a7ff";
 
   ctx.fillText(
-    "THANK YOU FOR ADDING ME TO YOUR GROUP",
+    BOT_NAME,
     W / 2,
-    116
+    175
   );
 
-  const groupX = 70;
-  const groupY = 155;
-  const boxW = W - 140;
-  const boxH = 150;
+  /* ---------------------------------------------------------
+     INFORMATION BOX
+  --------------------------------------------------------- */
 
-  ctx.fillStyle =
-    "rgba(255,255,255,0.035)";
+  const boxX = 170;
+  const boxY = 215;
+  const boxW = 860;
+  const boxH = 260;
 
-  roundRect(
+  roundedRect(
     ctx,
-    groupX,
-    groupY,
+    boxX,
+    boxY,
     boxW,
     boxH,
-    22
+    35
   );
+
+  ctx.fillStyle =
+    "rgba(8, 5, 20, 0.78)";
 
   ctx.fill();
 
   ctx.strokeStyle =
-    "rgba(255,255,255,0.08)";
+    "rgba(190, 100, 255, 0.8)";
 
-  ctx.lineWidth = 1.5;
-
-  roundRect(
-    ctx,
-    groupX,
-    groupY,
-    boxW,
-    boxH,
-    22
-  );
+  ctx.lineWidth = 4;
 
   ctx.stroke();
 
-  const groupSize = 110;
+  /* ---------------------------------------------------------
+     GROUP
+  --------------------------------------------------------- */
 
-  const groupCX =
-    groupX + 75;
-
-  const groupCY =
-    groupY + 75;
-
-  if (groupImg) {
-    ctx.save();
-
-    ctx.shadowColor =
-      "rgba(0,210,255,0.45)";
-
-    ctx.shadowBlur = 20;
-
-    roundRect(
-      ctx,
-      groupCX - groupSize / 2,
-      groupCY - groupSize / 2,
-      groupSize,
-      groupSize,
-      20
-    );
-
-    ctx.clip();
-
-    ctx.drawImage(
-      groupImg,
-      groupCX - groupSize / 2,
-      groupCY - groupSize / 2,
-      groupSize,
-      groupSize
-    );
-
-    ctx.restore();
-  } else {
-    ctx.fillStyle =
-      "#171c2d";
-
-    roundRect(
-      ctx,
-      groupCX - groupSize / 2,
-      groupCY - groupSize / 2,
-      groupSize,
-      groupSize,
-      20
-    );
-
-    ctx.fill();
-
-    ctx.font =
-      "48px Arial";
-
-    ctx.fillStyle =
-      "rgba(255,255,255,0.25)";
-
-    ctx.textAlign =
-      "center";
-
-    ctx.fillText(
-      "👥",
-      groupCX,
-      groupCY + 17
-    );
-  }
-
-  ctx.textAlign =
-    "left";
+  ctx.textAlign = "left";
 
   ctx.font =
-    '500 14px "Segoe UI", Arial';
+    'bold 28px "Arial"';
 
-  ctx.fillStyle =
-    "rgba(0,210,255,0.7)";
+  ctx.fillStyle = "#ffffff";
 
   ctx.fillText(
-    "GROUP",
-    groupX + 155,
-    groupY + 43
+    `👥 Group: ${readableText(threadName)}`,
+    boxX + 45,
+    boxY + 70
   );
 
-  const groupFit =
-    fitText(
-      ctx,
-      safeGroup,
-      boxW - 205,
-      34,
-      16,
-      true
-    );
+  /* ---------------------------------------------------------
+     ADDED BY
+  --------------------------------------------------------- */
+
+  ctx.fillText(
+    `👤 Added by: ${readableText(inviterName)}`,
+    boxX + 45,
+    boxY + 130
+  );
+
+  /* ---------------------------------------------------------
+     OWNER
+  --------------------------------------------------------- */
+
+  ctx.fillText(
+    `👑 Owner: ${OWNER_NAME}`,
+    boxX + 45,
+    boxY + 190
+  );
+
+  /* ---------------------------------------------------------
+     FOOTER
+  --------------------------------------------------------- */
+
+  ctx.textAlign = "center";
 
   ctx.font =
-    `bold ${groupFit.size}px "Segoe UI", Arial`;
+    'bold 25px "Arial"';
 
   ctx.fillStyle =
-    "#ffffff";
+    "#f0d7ff";
 
   ctx.fillText(
-    groupFit.text,
-    groupX + 155,
-    groupY + 88
-  );
-
-  ctx.font =
-    '400 15px "Segoe UI", Arial';
-
-  ctx.fillStyle =
-    "rgba(255,255,255,0.45)";
-
-  ctx.fillText(
-    "Bot has successfully joined this group",
-    groupX + 155,
-    groupY + 118
-  );
-
-  const invX = 70;
-  const invY = 335;
-  const invW = W - 140;
-  const invH = 130;
-
-  ctx.fillStyle =
-    "rgba(255,255,255,0.035)";
-
-  roundRect(
-    ctx,
-    invX,
-    invY,
-    invW,
-    invH,
-    22
-  );
-
-  ctx.fill();
-
-  ctx.strokeStyle =
-    "rgba(255,215,0,0.16)";
-
-  roundRect(
-    ctx,
-    invX,
-    invY,
-    invW,
-    invH,
-    22
-  );
-
-  ctx.stroke();
-
-  const avatarR = 45;
-
-  const avatarCX =
-    invX + 70;
-
-  const avatarCY =
-    invY + 65;
-
-  if (inviterImg) {
-    ctx.save();
-
-    ctx.shadowColor =
-      "rgba(255,215,0,0.55)";
-
-    ctx.shadowBlur = 20;
-
-    ctx.strokeStyle =
-      "rgba(255,215,0,0.8)";
-
-    ctx.lineWidth = 3;
-
-    ctx.beginPath();
-
-    ctx.arc(
-      avatarCX,
-      avatarCY,
-      avatarR + 5,
-      0,
-      Math.PI * 2
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-
-    drawCircleAvatar(
-      ctx,
-      inviterImg,
-      avatarCX,
-      avatarCY,
-      avatarR
-    );
-  } else {
-    ctx.fillStyle =
-      "#171c2d";
-
-    ctx.beginPath();
-
-    ctx.arc(
-      avatarCX,
-      avatarCY,
-      avatarR,
-      0,
-      Math.PI * 2
-    );
-
-    ctx.fill();
-
-    ctx.font =
-      "30px Arial";
-
-    ctx.fillStyle =
-      "rgba(255,255,255,0.25)";
-
-    ctx.textAlign =
-      "center";
-
-    ctx.fillText(
-      "👤",
-      avatarCX,
-      avatarCY + 11
-    );
-  }
-
-  ctx.textAlign =
-    "left";
-
-  ctx.font =
-    '500 14px "Segoe UI", Arial';
-
-  ctx.fillStyle =
-    "rgba(255,215,0,0.75)";
-
-  ctx.fillText(
-    "ADDED BY",
-    invX + 145,
-    invY + 43
-  );
-
-  const inviterFit =
-    fitText(
-      ctx,
-      safeInviter,
-      invW - 200,
-      32,
-      16,
-      true
-    );
-
-  ctx.font =
-    `bold ${inviterFit.size}px "Segoe UI", Arial`;
-
-  ctx.fillStyle =
-    "#ffffff";
-
-  ctx.fillText(
-    inviterFit.text,
-    invX + 145,
-    invY + 82
-  );
-
-  const infoX = 70;
-  const infoY = 490;
-  const infoW = W - 140;
-  const infoH = 100;
-
-  const infoGrad =
-    ctx.createLinearGradient(
-      infoX,
-      infoY,
-      infoX + infoW,
-      infoY
-    );
-
-  infoGrad.addColorStop(
-    0,
-    "rgba(0,200,255,0.08)"
-  );
-
-  infoGrad.addColorStop(
-    0.5,
-    "rgba(120,80,255,0.10)"
-  );
-
-  infoGrad.addColorStop(
-    1,
-    "rgba(0,255,160,0.06)"
-  );
-
-  ctx.fillStyle =
-    infoGrad;
-
-  roundRect(
-    ctx,
-    infoX,
-    infoY,
-    infoW,
-    infoH,
-    20
-  );
-
-  ctx.fill();
-
-  ctx.textAlign =
-    "center";
-
-  ctx.font =
-    'bold 20px "Segoe UI", Arial';
-
-  ctx.fillStyle =
-    "#ffffff";
-
-  ctx.fillText(
-    "👑  BOSS : ARIYAN",
+    "Thank you for adding me to your group ❤️",
     W / 2,
-    infoY + 32
+    545
   );
 
   ctx.font =
-    '500 15px "Segoe UI", Arial';
+    'bold 22px "Arial"';
 
   ctx.fillStyle =
-    "rgba(255,255,255,0.62)";
+    "#c77dff";
 
   ctx.fillText(
-    "WhatsApp : 01937278213   •   Facebook : ARIYAN",
+    `Powered by ${OWNER_NAME}`,
     W / 2,
-    infoY + 62
+    595
   );
 
-  ctx.font =
-    '500 13px "Segoe UI", Arial';
-
-  ctx.fillStyle =
-    "rgba(255,255,255,0.32)";
-
-  ctx.fillText(
-    "Designed & Powered By EryXenX + ARIYAN",
-    W / 2,
-    H - 18
-  );
+  /* ---------------------------------------------------------
+     SAVE
+  --------------------------------------------------------- */
 
   const tempPath =
     path.join(
-      __dirname,
+      CACHE_DIR,
       `temp_bot_joined_${Date.now()}.png`
     );
 
@@ -1265,7 +957,7 @@ async function createBotJoinedCard({
 }
 
 /* =========================================================
-🎨 ORIGINAL NEW MEMBER CARD
+   🎨 NEW MEMBER WELCOME CARD
 ========================================================= */
 
 async function createWelcomeCard({
@@ -1279,7 +971,7 @@ async function createWelcomeCard({
   api
 }) {
   const W = 1200;
-  const H = 630;
+  const H = 675;
 
   const canvas =
     createCanvas(W, H);
@@ -1287,69 +979,113 @@ async function createWelcomeCard({
   const ctx =
     canvas.getContext("2d");
 
+  /* =======================================================
+     👤 LOAD PROFILE IMAGES
+  ======================================================= */
+
   async function loadProfile(uid) {
-    const buf =
-      await downloadHighQualityProfile(
-        uid
-      );
-
-    if (buf) {
-      return loadImage(buf)
-        .catch(() => null);
-    }
-
     try {
-      const info =
-        await api.getUserInfo([uid]);
+      const buf =
+        await downloadHighQualityProfile(uid);
 
-      const src =
-        info[uid]?.thumbSrc;
+      if (!buf) return null;
 
-      if (src) {
-        const b2 =
-          await downloadImage(src);
-
-        if (b2) {
-          return loadImage(b2)
-            .catch(() => null);
-        }
-      }
-    } catch {}
-
-    return null;
+      return await loadImage(buf);
+    } catch (_) {
+      return null;
+    }
   }
 
   const [
     newUserImg,
-    inviterImg,
-    groupImg
+    inviterImg
   ] = await Promise.all([
     loadProfile(newUserID),
-    loadProfile(inviterID),
-
-    getGroupImage(
-      threadID,
-      api
-    ).then(
-      b =>
-        b
-          ? loadImage(b)
-              .catch(() => null)
-          : null
-    )
+    loadProfile(inviterID)
   ]);
 
+  /* =======================================================
+     🔤 SAFE TEXT
+  ======================================================= */
+
   const safeUser =
-    readableText(userName);
+    readableText(userName)
+      .trim()
+      .toUpperCase();
 
   const safeInviter =
-    readableText(inviterName);
+    readableText(inviterName)
+      .trim();
 
-  const safeGroup =
-    readableText(threadName);
+  const safeThread =
+    readableText(threadName)
+      .trim();
 
-  ctx.fillStyle =
-    "#09090f";
+  /* =======================================================
+     🖼️ BACKGROUND
+  ======================================================= */
+
+  const bgPath =
+    path.join(
+      __dirname,
+      "welcome_bg.png"
+    );
+
+  if (fs.existsSync(bgPath)) {
+    try {
+      const bg =
+        await loadImage(bgPath);
+
+      ctx.drawImage(
+        bg,
+        0,
+        0,
+        W,
+        H
+      );
+    } catch (_) {
+      drawFallbackBackground(
+        ctx,
+        W,
+        H
+      );
+    }
+  } else {
+    drawFallbackBackground(
+      ctx,
+      W,
+      H
+    );
+  }
+
+  /* =======================================================
+     🌑 OVERLAY
+  ======================================================= */
+
+  const overlay =
+    ctx.createLinearGradient(
+      0,
+      0,
+      0,
+      H
+    );
+
+  overlay.addColorStop(
+    0,
+    "rgba(0, 0, 0, 0.15)"
+  );
+
+  overlay.addColorStop(
+    0.55,
+    "rgba(5, 2, 15, 0.30)"
+  );
+
+  overlay.addColorStop(
+    1,
+    "rgba(5, 2, 15, 0.72)"
+  );
+
+  ctx.fillStyle = overlay;
 
   ctx.fillRect(
     0,
@@ -1358,1114 +1094,242 @@ async function createWelcomeCard({
     H
   );
 
-  const rng = s => {
-    let x =
-      Math.sin(s) * 10000;
+  /* =======================================================
+     👤 NEW MEMBER AVATAR
+  ======================================================= */
 
-    return x -
-      Math.floor(x);
-  };
-
-  ctx.fillStyle =
-    "rgba(255,255,255,0.014)";
-
-  for (
-    let i = 0;
-    i < 280;
-    i++
-  ) {
-    ctx.beginPath();
-
-    ctx.arc(
-      rng(i * 2.3) * W,
-      rng(i * 4.7) * H,
-      rng(i * 7.1) * 1.3 + 0.2,
-      0,
-      Math.PI * 2
-    );
-
-    ctx.fill();
-  }
-
-  const splitX =
-    Math.round(
-      W * 0.385
-    );
-
-  const PAD = 44;
-
-  ctx.fillStyle =
-    "#0d0d16";
-
-  ctx.fillRect(
-    0,
-    0,
-    splitX,
-    H
-  );
-
-  {
-    const g =
-      ctx.createLinearGradient(
-        splitX - 1,
-        0,
-        splitX + 28,
-        0
-      );
-
-    g.addColorStop(
-      0,
-      "rgba(255,255,255,0.10)"
-    );
-
-    g.addColorStop(
-      1,
-      "rgba(255,255,255,0)"
-    );
-
-    ctx.fillStyle = g;
-
-    ctx.fillRect(
-      splitX - 1,
-      0,
-      30,
-      H
-    );
-  }
-
-  {
-    const lh =
-      H * 0.52;
-
-    const ly =
-      (H - lh) / 2;
-
-    const g =
-      ctx.createLinearGradient(
-        0,
-        ly,
-        0,
-        ly + lh
-      );
-
-    g.addColorStop(
-      0,
-      "rgba(46,204,113,0)"
-    );
-
-    g.addColorStop(
-      0.4,
-      "rgba(46,204,113,0.8)"
-    );
-
-    g.addColorStop(
-      0.6,
-      "rgba(46,204,113,0.8)"
-    );
-
-    g.addColorStop(
-      1,
-      "rgba(46,204,113,0)"
-    );
-
-    ctx.fillStyle = g;
-
-    ctx.fillRect(
-      0,
-      ly,
-      3,
-      lh
-    );
-  }
-
-  {
-    const rCX =
-      splitX +
-      (W - splitX) * 0.5;
-
-    const g =
-      ctx.createRadialGradient(
-        rCX,
-        H * 0.42,
-        0,
-        rCX,
-        H * 0.42,
-        380
-      );
-
-    g.addColorStop(
-      0,
-      "rgba(50,110,255,0.055)"
-    );
-
-    g.addColorStop(
-      1,
-      "rgba(0,0,0,0)"
-    );
-
-    ctx.fillStyle = g;
-
-    ctx.fillRect(
-      splitX,
-      0,
-      W - splitX,
-      H
-    );
-  }
-
-  ctx.save();
-
-  ctx.shadowColor =
-    "rgba(80,160,255,0.28)";
-
-  ctx.shadowBlur = 22;
-
-  ctx.strokeStyle =
-    "rgba(80,160,255,0.2)";
-
-  ctx.lineWidth = 2;
-
-  roundRect(
-    ctx,
-    6,
-    6,
-    W - 12,
-    H - 12,
-    18
-  );
-
-  ctx.stroke();
-
-  ctx.restore();
-
-  const leftCX =
-    splitX / 2;
-
-  const avatarR = 115;
-
-  const avatarY =
-    H / 2 - 18;
-
-  ctx.save();
-
-  ctx.textAlign =
-    "center";
-
-  ctx.font =
-    '600 17px "Segoe UI", Arial';
-
-  ctx.fillStyle =
-    "rgba(46,204,113,0.85)";
-
-  ctx.fillText(
-    "N E W   M E M B E R",
-    leftCX,
-    50
-  );
-
-  ctx.restore();
-
-  ctx.save();
-
-  ctx.shadowColor =
-    "rgba(46,204,113,0.6)";
-
-  ctx.shadowBlur = 32;
-
-  ctx.strokeStyle =
-    "rgba(46,204,113,0.9)";
-
-  ctx.lineWidth = 3.5;
-
-  ctx.beginPath();
-
-  ctx.arc(
-    leftCX,
-    avatarY,
-    avatarR + 8,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.stroke();
-
-  ctx.restore();
-
-  ctx.strokeStyle =
-    "rgba(255,255,255,0.05)";
-
-  ctx.lineWidth = 1.5;
-
-  ctx.beginPath();
-
-  ctx.arc(
-    leftCX,
-    avatarY,
-    avatarR + 17,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.stroke();
+  const avatarX = 115;
+  const avatarY = 540;
+  const avatarR = 82;
 
   if (newUserImg) {
     drawCircleAvatar(
       ctx,
       newUserImg,
-      leftCX,
+      avatarX,
+      avatarY,
+      avatarR
+    );
+
+    drawAvatarBorder(
+      ctx,
+      avatarX,
       avatarY,
       avatarR
     );
   } else {
-    ctx.fillStyle =
-      "#161628";
+    ctx.save();
 
     ctx.beginPath();
 
     ctx.arc(
-      leftCX,
+      avatarX,
       avatarY,
       avatarR,
       0,
       Math.PI * 2
     );
 
-    ctx.fill();
-
-    ctx.save();
-
-    ctx.textAlign =
-      "center";
-
-    ctx.textBaseline =
-      "middle";
-
-    ctx.font =
-      `bold ${Math.round(
-        avatarR * 0.7
-      )}px Arial`;
-
     ctx.fillStyle =
-      "rgba(255,255,255,0.15)";
-
-    ctx.fillText(
-      "👤",
-      leftCX,
-      avatarY
-    );
-
-    ctx.restore();
-  }
-
-  {
-    const maxW =
-      splitX - 32;
-
-    ctx.save();
-
-    ctx.textAlign =
-      "center";
-
-    const {
-      text,
-      size
-    } =
-      fitText(
-        ctx,
-        safeUser,
-        maxW,
-        34,
-        15
-      );
-
-    ctx.font =
-      `bold ${size}px "Segoe UI", Arial`;
-
-    ctx.fillStyle =
-      "#f0f0f8";
-
-    ctx.shadowColor =
-      "rgba(0,0,0,0.7)";
-
-    ctx.shadowBlur = 8;
-
-    ctx.fillText(
-      text,
-      leftCX,
-      avatarY +
-        avatarR +
-        40
-    );
-
-    ctx.restore();
-  }
-
-  {
-    const dy =
-      avatarY +
-      avatarR +
-      57;
-
-    const dw =
-      splitX * 0.44;
-
-    const g =
-      ctx.createLinearGradient(
-        leftCX - dw / 2,
-        0,
-        leftCX + dw / 2,
-        0
-      );
-
-    g.addColorStop(
-      0,
-      "transparent"
-    );
-
-    g.addColorStop(
-      0.5,
-      "rgba(255,255,255,0.1)"
-    );
-
-    g.addColorStop(
-      1,
-      "transparent"
-    );
-
-    ctx.strokeStyle = g;
-    ctx.lineWidth = 1;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      leftCX - dw / 2,
-      dy
-    );
-
-    ctx.lineTo(
-      leftCX + dw / 2,
-      dy
-    );
-
-    ctx.stroke();
-  }
-
-  {
-    const bText =
-      `✦  ${ordinal(memberCount)} Member  ✦`;
-
-    ctx.save();
-
-    ctx.font =
-      'bold 17px "Segoe UI", Arial';
-
-    ctx.textAlign =
-      "center";
-
-    const bw =
-      ctx.measureText(
-        bText
-      ).width + 32;
-
-    const bh = 36;
-
-    const bx =
-      leftCX - bw / 2;
-
-    const by =
-      avatarY +
-      avatarR +
-      70;
-
-    const bg =
-      ctx.createLinearGradient(
-        bx,
-        0,
-        bx + bw,
-        0
-      );
-
-    bg.addColorStop(
-      0,
-      "rgba(46,204,113,0.07)"
-    );
-
-    bg.addColorStop(
-      0.5,
-      "rgba(46,204,113,0.20)"
-    );
-
-    bg.addColorStop(
-      1,
-      "rgba(46,204,113,0.07)"
-    );
-
-    ctx.fillStyle = bg;
-
-    roundRect(
-      ctx,
-      bx,
-      by,
-      bw,
-      bh,
-      9
-    );
+      "#241044";
 
     ctx.fill();
 
     ctx.strokeStyle =
-      "rgba(46,204,113,0.5)";
+      "#c084fc";
 
-    ctx.lineWidth = 1.5;
-
-    roundRect(
-      ctx,
-      bx,
-      by,
-      bw,
-      bh,
-      9
-    );
+    ctx.lineWidth = 7;
 
     ctx.stroke();
-
-    ctx.fillStyle =
-      "rgba(46,204,113,0.92)";
-
-    ctx.fillText(
-      bText,
-      leftCX,
-      by + 24
-    );
 
     ctx.restore();
   }
 
-  const rX =
-    splitX + PAD;
-
-  const rRight =
-    W - PAD;
-
-  ctx.save();
+  /* =======================================================
+     👋 WELCOME TEXT
+  ======================================================= */
 
   ctx.textAlign =
     "left";
 
   ctx.font =
-    'bold 40px "Segoe UI", Arial';
-
-  const wGrad =
-    ctx.createLinearGradient(
-      rX,
-      0,
-      rX + 500,
-      0
-    );
-
-  wGrad.addColorStop(
-    0,
-    "#ffffff"
-  );
-
-  wGrad.addColorStop(
-    1,
-    "rgba(255,255,255,0.55)"
-  );
+    'bold 31px "Arial"';
 
   ctx.fillStyle =
-    wGrad;
+    "#ffffff";
 
   ctx.shadowColor =
-    "rgba(255,255,255,0.15)";
+    "#9d4edd";
 
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = 15;
 
   ctx.fillText(
-    "Welcome To Our Group",
-    rX,
-    90
+    "WELCOME",
+    230,
+    470
   );
 
-  ctx.restore();
+  ctx.shadowBlur = 0;
 
-  ctx.save();
-
-  ctx.shadowColor =
-    "rgba(100,200,255,0.8)";
-
-  ctx.shadowBlur = 10;
-
-  ctx.strokeStyle =
-    "rgba(100,200,255,0.8)";
-
-  ctx.lineWidth = 3;
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    rX,
-    102
-  );
-
-  ctx.lineTo(
-    rX + 130,
-    102
-  );
-
-  ctx.stroke();
-
-  ctx.restore();
-
-  const groupSecY = 155;
-  const gAvSize = 90;
-
-  ctx.save();
-
-  ctx.textAlign =
-    "left";
+  /* =======================================================
+     👤 USER NAME
+  ======================================================= */
 
   ctx.font =
-    '500 12px "Segoe UI", Arial';
+    'bold 45px "Arial"';
 
   ctx.fillStyle =
-    "rgba(0,200,255,0.55)";
+    "#e9c8ff";
 
-  ctx.fillText(
-    "G R O U P",
-    rX,
-    groupSecY
-  );
+  let displayName =
+    safeUser || "NEW MEMBER";
 
-  ctx.restore();
-
-  const gAx = rX;
-
-  const gAy =
-    groupSecY + 14;
-
-  if (groupImg) {
-    ctx.save();
-
-    roundRect(
-      ctx,
-      gAx,
-      gAy,
-      gAvSize,
-      gAvSize,
-      16
-    );
-
-    ctx.clip();
-
-    ctx.drawImage(
-      groupImg,
-      gAx,
-      gAy,
-      gAvSize,
-      gAvSize
-    );
-
-    ctx.restore();
-
-    ctx.save();
-
-    ctx.strokeStyle =
-      "rgba(0,200,255,0.5)";
-
-    ctx.lineWidth = 2.5;
-
-    roundRect(
-      ctx,
-      gAx,
-      gAy,
-      gAvSize,
-      gAvSize,
-      16
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-  } else {
-    ctx.fillStyle =
-      "#161628";
-
-    roundRect(
-      ctx,
-      gAx,
-      gAy,
-      gAvSize,
-      gAvSize,
-      16
-    );
-
-    ctx.fill();
-
-    ctx.save();
-
-    ctx.textAlign =
-      "center";
-
-    ctx.textBaseline =
-      "middle";
-
-    ctx.font =
-      "44px Arial";
-
-    ctx.fillStyle =
-      "rgba(255,255,255,0.18)";
-
-    ctx.fillText(
-      "🏠",
-      gAx +
-        gAvSize / 2,
-      gAy +
-        gAvSize / 2
-    );
-
-    ctx.restore();
-  }
-
-  {
-    const gTx =
-      gAx +
-      gAvSize +
-      20;
-
-    const gTw =
-      rRight - gTx;
-
-    const gTcY =
-      gAy +
-      gAvSize / 2;
-
-    ctx.save();
-
-    ctx.textAlign =
-      "left";
-
-    const {
-      text: gn,
-      size: gs
-    } =
-      fitText(
-        ctx,
-        safeGroup,
-        gTw,
-        34,
-        14
-      );
-
-    ctx.font =
-      `bold ${gs}px "Segoe UI", Arial`;
-
-    ctx.fillStyle =
-      "#e8e8f2";
-
-    ctx.shadowColor =
-      "rgba(0,0,0,0.6)";
-
-    ctx.shadowBlur = 6;
-
-    ctx.fillText(
-      gn,
-      gTx,
-      gTcY +
-        gs * 0.35
-    );
-
-    ctx.restore();
-  }
-
-  {
-    const sy =
-      gAy +
-      gAvSize +
-      22;
-
-    const g =
-      ctx.createLinearGradient(
-        rX,
+  /*
+   * খুব বড় নাম হলে ছোট করে।
+   */
+  if (displayName.length > 22) {
+    displayName =
+      displayName.substring(
         0,
-        rRight,
-        0
-      );
-
-    g.addColorStop(
-      0,
-      "rgba(255,255,255,0.10)"
-    );
-
-    g.addColorStop(
-      0.7,
-      "rgba(255,255,255,0.03)"
-    );
-
-    g.addColorStop(
-      1,
-      "rgba(255,255,255,0)"
-    );
-
-    ctx.strokeStyle = g;
-    ctx.lineWidth = 1;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      rX,
-      sy
-    );
-
-    ctx.lineTo(
-      rRight,
-      sy
-    );
-
-    ctx.stroke();
+        22
+      ) + "...";
   }
 
-  const invSecY =
-    gAy +
-    gAvSize +
-    40;
-
-  const invAvR = 52;
-
-  ctx.save();
-
-  ctx.textAlign =
-    "left";
-
-  ctx.font =
-    '500 12px "Segoe UI", Arial';
-
-  ctx.fillStyle =
-    "rgba(255,215,0,0.5)";
-
   ctx.fillText(
-    "A D D E D   B Y",
-    rX,
-    invSecY
+    displayName,
+    230,
+    520
   );
 
-  ctx.restore();
+  /* =======================================================
+     👥 MEMBER COUNT
+  ======================================================= */
 
-  const invAy =
-    invSecY + 14;
+  ctx.font =
+    'bold 24px "Arial"';
 
-  const invCX =
-    rX + invAvR;
+  ctx.fillStyle =
+    "#ffffff";
 
-  const invCY =
-    invAy + invAvR;
+  ctx.fillText(
+    `✦ Member #${memberCount} ✦`,
+    230,
+    560
+  );
+
+  /* =======================================================
+     👤 INVITER CARD
+  ======================================================= */
+
+  const inviterX = 1030;
+  const inviterY = 105;
+  const inviterR = 62;
 
   if (inviterImg) {
-    ctx.save();
-
-    ctx.shadowColor =
-      "rgba(255,215,0,0.4)";
-
-    ctx.shadowBlur = 18;
-
-    ctx.strokeStyle =
-      "rgba(255,215,0,0.65)";
-
-    ctx.lineWidth = 2.5;
-
-    ctx.beginPath();
-
-    ctx.arc(
-      invCX,
-      invCY,
-      invAvR + 4,
-      0,
-      Math.PI * 2
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-
     drawCircleAvatar(
       ctx,
       inviterImg,
-      invCX,
-      invCY,
-      invAvR
-    );
-  } else {
-    ctx.fillStyle =
-      "#161628";
-
-    ctx.beginPath();
-
-    ctx.arc(
-      invCX,
-      invCY,
-      invAvR,
-      0,
-      Math.PI * 2
+      inviterX,
+      inviterY,
+      inviterR
     );
 
-    ctx.fill();
-
-    ctx.save();
-
-    ctx.textAlign =
-      "center";
-
-    ctx.textBaseline =
-      "middle";
-
-    ctx.font =
-      "34px Arial";
-
-    ctx.fillStyle =
-      "rgba(255,255,255,0.18)";
-
-    ctx.fillText(
-      "👤",
-      invCX,
-      invCY
-    );
-
-    ctx.restore();
-  }
-
-  {
-    const iTx =
-      invCX +
-      invAvR +
-      20;
-
-    const iTw =
-      rRight - iTx;
-
-    ctx.save();
-
-    ctx.textAlign =
-      "left";
-
-    const {
-      text: iname,
-      size: is
-    } =
-      fitText(
-        ctx,
-        safeInviter,
-        iTw,
-        34,
-        14
-      );
-
-    ctx.font =
-      `bold ${is}px "Segoe UI", Arial`;
-
-    ctx.fillStyle =
-      "#e8e8f2";
-
-    ctx.shadowColor =
-      "rgba(0,0,0,0.6)";
-
-    ctx.shadowBlur = 6;
-
-    ctx.fillText(
-      iname,
-      iTx,
-      invCY +
-        is * 0.35
-    );
-
-    ctx.restore();
-  }
-
-  {
-    const blockY =
-      invAy +
-      invAvR * 2 +
-      32;
-
-    const blockH =
-      H -
-      blockY -
-      44;
-
-    const g =
-      ctx.createLinearGradient(
-        rX,
-        0,
-        rRight,
-        0
-      );
-
-    g.addColorStop(
-      0,
-      "rgba(255,255,255,0.10)"
-    );
-
-    g.addColorStop(
-      0.7,
-      "rgba(255,255,255,0.03)"
-    );
-
-    g.addColorStop(
-      1,
-      "rgba(255,255,255,0)"
-    );
-
-    ctx.strokeStyle = g;
-    ctx.lineWidth = 1;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      rX,
-      blockY - 10
-    );
-
-    ctx.lineTo(
-      rRight,
-      blockY - 10
-    );
-
-    ctx.stroke();
-
-    const pillG =
-      ctx.createLinearGradient(
-        rX,
-        blockY,
-        rRight,
-        blockY + blockH
-      );
-
-    pillG.addColorStop(
-      0,
-      "rgba(255,255,255,0.03)"
-    );
-
-    pillG.addColorStop(
-      1,
-      "rgba(255,255,255,0.01)"
-    );
-
-    ctx.fillStyle =
-      pillG;
-
-    roundRect(
+    drawAvatarBorder(
       ctx,
-      rX,
-      blockY,
-      rRight - rX,
-      blockH,
-      14
+      inviterX,
+      inviterY,
+      inviterR,
+      6
     );
-
-    ctx.fill();
-
-    ctx.save();
-
-    ctx.strokeStyle =
-      "rgba(255,255,255,0.06)";
-
-    ctx.lineWidth = 1;
-
-    roundRect(
-      ctx,
-      rX,
-      blockY,
-      rRight - rX,
-      blockH,
-      14
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-
-    const cx =
-      rX +
-      (rRight - rX) / 2;
-
-    const cy =
-      blockY +
-      blockH / 2;
-
-    ctx.save();
-
-    ctx.textAlign =
-      "center";
-
-    ctx.font =
-      'bold 22px "Segoe UI", Arial';
-
-    const pGrad =
-      ctx.createLinearGradient(
-        cx - 120,
-        0,
-        cx + 120,
-        0
-      );
-
-    pGrad.addColorStop(
-      0,
-      "rgba(255,255,255,0.55)"
-    );
-
-    pGrad.addColorStop(
-      0.4,
-      "rgba(255,255,255,0.9)"
-    );
-
-    pGrad.addColorStop(
-      0.65,
-      "rgba(100,200,255,1)"
-    );
-
-    pGrad.addColorStop(
-      1,
-      "rgba(46,204,113,1)"
-    );
-
-    ctx.fillStyle =
-      pGrad;
-
-    ctx.shadowColor =
-      "rgba(100,200,255,0.55)";
-
-    ctx.shadowBlur = 16;
-
-    ctx.fillText(
-      "Powered By ARIYAN",
-      cx,
-      cy + 8
-    );
-
-    ctx.restore();
   }
-
-  ctx.save();
 
   ctx.textAlign =
     "right";
 
   ctx.font =
-    '400 14px "Segoe UI", Arial';
+    'bold 22px "Arial"';
 
   ctx.fillStyle =
-    "rgba(255,255,255,0.12)";
+    "#ffffff";
 
   ctx.fillText(
-    "Enjoy your stay ✨",
-    W - 28,
-    H - 20
+    "ADDED BY",
+    inviterX - 80,
+    inviterY - 5
   );
 
-  ctx.restore();
+  ctx.font =
+    'bold 25px "Arial"';
+
+  ctx.fillStyle =
+    "#d8a4ff";
+
+  let inviterDisplay =
+    safeInviter || "Unknown";
+
+  if (inviterDisplay.length > 18) {
+    inviterDisplay =
+      inviterDisplay.substring(
+        0,
+        18
+      ) + "...";
+  }
+
+  ctx.fillText(
+    inviterDisplay,
+    inviterX - 80,
+    inviterY + 30
+  );
+
+  /* =======================================================
+     👑 BOT BRANDING
+  ======================================================= */
+
+  ctx.textAlign =
+    "center";
+
+  ctx.font =
+    'bold 24px "Arial"';
+
+  ctx.fillStyle =
+    "#ffffff";
+
+  ctx.shadowColor =
+    "#a855f7";
+
+  ctx.shadowBlur = 12;
+
+  ctx.fillText(
+    BOT_NAME,
+    W / 2,
+    625
+  );
+
+  ctx.shadowBlur = 0;
+
+  /* =======================================================
+     💜 FOOTER
+  ======================================================= */
+
+  ctx.font =
+    'bold 17px "Arial"';
+
+  ctx.fillStyle =
+    "#e9d5ff";
+
+  ctx.fillText(
+    `LOYALTY • RESPECT • HONOR • STRENGTH • UNITY`,
+    W / 2,
+    650
+  );
+
+  /* =======================================================
+     💾 SAVE IMAGE
+  ======================================================= */
 
   const tempPath =
     path.join(
-      __dirname,
+      CACHE_DIR,
       `temp_welcome_${Date.now()}.png`
     );
 
@@ -2475,4 +1339,91 @@ async function createWelcomeCard({
   );
 
   return tempPath;
+}
+
+/* =========================================================
+   🌌 FALLBACK BACKGROUND
+========================================================= */
+
+function drawFallbackBackground(
+  ctx,
+  W,
+  H
+) {
+  const gradient =
+    ctx.createLinearGradient(
+      0,
+      0,
+      W,
+      H
+    );
+
+  gradient.addColorStop(
+    0,
+    "#090014"
+  );
+
+  gradient.addColorStop(
+    0.5,
+    "#16002d"
+  );
+
+  gradient.addColorStop(
+    1,
+    "#030008"
+  );
+
+  ctx.fillStyle =
+    gradient;
+
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+  /* Purple glow */
+
+  const glow =
+    ctx.createRadialGradient(
+      W / 2,
+      H / 2,
+      50,
+      W / 2,
+      H / 2,
+      500
+    );
+
+  glow.addColorStop(
+    0,
+    "rgba(168, 85, 247, 0.28)"
+  );
+
+  glow.addColorStop(
+    1,
+    "rgba(168, 85, 247, 0)"
+  );
+
+  ctx.fillStyle =
+    glow;
+
+  ctx.fillRect(
+    0,
+    0,
+    W,
+    H
+  );
+
+  ctx.strokeStyle =
+    "rgba(192, 132, 252, 0.5)";
+
+  ctx.lineWidth = 5;
+
+  ctx.strokeRect(
+    15,
+    15,
+    W - 30,
+    H - 30
+  );
 }
